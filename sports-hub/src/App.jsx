@@ -1,8 +1,9 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { COLORS } from '../../shared/theme.js';
-import Header from './components/Header';
-import HomePage from './pages/HomePage';
+import Header      from './components/Header';
+import ChatWidget  from './components/ChatWidget';
+import HomePage    from './pages/HomePage';
 import ScoresPage from './pages/ScoresPage';
 import NewsPage from './pages/NewsPage';
 import SchedulePage from './pages/SchedulePage';
@@ -33,6 +34,9 @@ export default function App() {
           <Route path="*"         element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
+      {/* Floating AI chat — available on every page */}
+      <ChatWidget />
     </div>
   );
 }
