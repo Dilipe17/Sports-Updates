@@ -101,6 +101,69 @@ export async function fetchStandings(sport, league) {
   return apiFetch(`/standings?${params}`);
 }
 
+// ─── ESPN (free public API, no key required) ──────────────────────────────────
+
+const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports';
+
+const ESPN_SPORT_PATHS = {
+  football:   'football/nfl',
+  basketball: 'basketball/nba',
+  baseball:   'baseball/mlb',
+  soccer:     'soccer/eng.1',
+  hockey:     'hockey/nhl',
+};
+
+/**
+ * Fetch live scoreboard from ESPN's free public API.
+ * @param {string} sport - e.g. 'basketball' | 'football' | 'soccer' …
+ * @returns {Promise<object>} Raw ESPN scoreboard response
+ */
+export async function fetchESPNScoreboard(sport = 'basketball') {
+  const path = ESPN_SPORT_PATHS[sport] || 'basketball/nba';
+  const res = await fetch(`${ESPN_BASE}/${path}/scoreboard`);
+  if (!res.ok) throw new Error(`ESPN API error ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Fetch latest headlines from ESPN's free public API.
+ * @param {string} sport
+ * @param {number} limit
+ * @returns {Promise<object>} Raw ESPN news response
+ */
+export async function fetchESPNNews(sport = 'basketball', limit = 10) {
+  const path = ESPN_SPORT_PATHS[sport] || 'basketball/nba';
+  const res = await fetch(`${ESPN_BASE}/${path}/news?limit=${limit}`);
+  if (!res.ok) throw new Error(`ESPN API error ${res.status}`);
+  return res.json();
+}
+
+// ─── AI Chat (AWS Bedrock via Lambda + API Gateway) ───────────────────────────
+
+/**
+ * Replace this URL with your deployed API Gateway endpoint after running:
+ *   cd lambda/chat && npm install && zip -r function.zip .
+ *   aws lambda create-function ...  (see lambda/chat/DEPLOY.md)
+ */
+const CHAT_API_URL = 'https://YOUR_API_GATEWAY_URL/chat';
+
+/**
+ * Send a chat message to the AI sports assistant.
+ * The Lambda fetches live ESPN data and forwards it to AWS Bedrock (Claude 3 Haiku).
+ * @param {string} message - User's question
+ * @param {string} sport   - Currently selected sport filter
+ * @returns {Promise<{ reply: string }>}
+ */
+export async function sendChatMessage(message, sport = 'all') {
+  const res = await fetch(CHAT_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, sport }),
+  });
+  if (!res.ok) throw new Error(`Chat API error ${res.status}`);
+  return res.json();
+}
+
 // ─── Mock data helpers (for development / testing) ───────────────────────────
 
 export const MOCK_LIVE_GAMES = [

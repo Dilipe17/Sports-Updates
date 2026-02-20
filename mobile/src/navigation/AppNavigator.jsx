@@ -6,6 +6,7 @@ import HomeScreen    from '../screens/HomeScreen';
 import ScoresScreen  from '../screens/ScoresScreen';
 import NewsScreen    from '../screens/NewsScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
+import ChatScreen    from '../screens/ChatScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -14,6 +15,7 @@ const TAB_ICONS = {
   Scores:   '🏆',
   News:     '📰',
   Schedule: '📅',
+  Chat:     '🤖',
 };
 
 export default function AppNavigator() {
@@ -41,6 +43,7 @@ export default function AppNavigator() {
       <Tab.Screen name="Scores"   component={ScoresScreen}   />
       <Tab.Screen name="News"     component={NewsScreen}     />
       <Tab.Screen name="Schedule" component={ScheduleScreen} />
+      <Tab.Screen name="Chat"     component={ChatScreen}     options={{ title: 'AI Assistant' }} />
     </Tab.Navigator>
   );
 }
