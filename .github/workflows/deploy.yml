@@ -50,3 +50,23 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
+
+      # Step 8: Package and deploy the Lambda chat function
+      - name: Deploy Lambda chat function
+        run: |
+          cd lambda/chat
+          npm ci --omit=dev
+          zip -r function.zip . --exclude "*.zip"
+          aws lambda update-function-code \
+            --function-name sports-hub-chat \
+            --zip-file fileb://function.zip \
+            --region ${{ secrets.AWS_REGION }} || true
+
+      # Step 9: Enable CORS on API Gateway so the browser preflight (OPTIONS) succeeds
+      - name: Enable API Gateway CORS
+        run: |
+          API_ID="cjer7mu9ek"
+          aws apigatewayv2 update-api \
+            --api-id "$API_ID" \
+            --cors-configuration "AllowOrigins=*,AllowMethods=POST OPTIONS,AllowHeaders=Content-Type" \
+            --region us-east-1 || true
