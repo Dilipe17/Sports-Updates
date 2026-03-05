@@ -284,7 +284,9 @@ const styles = {
     borderBottomLeftRadius: BORDER_RADIUS.xs,
   },
   bubbleError: {
-    borderLeft: `3px solid ${COLORS.warning}`,
+    backgroundColor: 'rgba(74, 144, 226, 0.15)',
+    borderLeft: '3px solid #4A90E2',
+    color: '#90C4FF',
   },
 
   typingBubble: {

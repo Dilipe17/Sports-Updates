@@ -23,6 +23,7 @@ const bedrock = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports';
 
 const ESPN_SPORT_PATHS = {
+  cricket:    'cricket/8676',
   football:   'football/nfl',
   basketball: 'basketball/nba',
   baseball:   'baseball/mlb',
