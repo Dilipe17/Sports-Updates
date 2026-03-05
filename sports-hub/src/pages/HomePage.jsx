@@ -7,6 +7,58 @@ import { SPORT_CONFIG, fetchSportMatches, fetchESPNHeadlines } from '../../../sh
 
 const SPORTS = Object.entries(SPORT_CONFIG).map(([id, cfg]) => ({ id, ...cfg }));
 
+const RESPONSIVE_CSS = `
+  .home-grid {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 24px;
+  }
+  .home-sidebar { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .home-sidebar-mobile-toggle { display: none; }
+  .home-sidebar-content { display: flex; flex-direction: column; gap: 18px; }
+
+  @media (max-width: 900px) {
+    .home-grid { grid-template-columns: 1fr; }
+    .home-sidebar {
+      order: 2;
+      flex-direction: column;
+    }
+    .home-sidebar-mobile-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(30,58,138,0.38);
+      border: 1px solid rgba(30,64,175,0.4);
+      border-radius: 14px;
+      color: #93c5fd;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .home-sidebar-content {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.28s ease;
+      opacity: 0;
+    }
+    .home-sidebar-content.open {
+      max-height: 900px;
+      opacity: 1;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .home-tab-bar { gap: 4px !important; }
+    .home-tab-btn { padding: 7px 11px !important; font-size: 12px !important; }
+  }
+`;
+
 function timeAgo(date) {
   const s = Math.floor((Date.now() - new Date(date)) / 1000);
   if (s < 60) return 'Just now';
@@ -22,6 +74,7 @@ export default function HomePage() {
   const [loading,       setLoading]       = useState(true);
   const [news,          setNews]          = useState([]);
   const [favOpen,       setFavOpen]       = useState(false);
+  const [sidebarOpen,   setSidebarOpen]   = useState(false);
   const intervalRef = useRef(null);
 
   /* ── fetch matches ──────────────────────────────────────────────────────── */
@@ -49,7 +102,7 @@ export default function HomePage() {
   /* ── region filter ──────────────────────────────────────────────────────── */
   const regionBlocked = region !== 'all' && SPORT_CONFIG[activeTab]?.region !== region;
 
-  /* ── cricket grouping ───────────────────────────────────────────────────── */
+  /* ── match rendering ────────────────────────────────────────────────────── */
   const renderMatches = () => {
     if (loading) return [1, 2, 3].map(i => <MatchCardSkeleton key={i} />);
 
@@ -69,7 +122,7 @@ export default function HomePage() {
         <div style={{ color: '#93c5fd', fontSize: 16, fontWeight: 500 }}>
           No {SPORT_CONFIG[activeTab]?.name} matches right now.
         </div>
-        <button style={retryBtn} onClick={() => loadMatches(activeTab, true)}>↻ Retry</button>
+        <button style={retryBtn} onClick={() => loadMatches(activeTab, true)}>&#8635; Retry</button>
       </div>
     );
 
@@ -109,59 +162,20 @@ export default function HomePage() {
 
   return (
     <>
+      <style dangerouslySetInnerHTML={{ __html: RESPONSIVE_CSS }} />
       <Header onFavoritesClick={() => setFavOpen(true)} />
       <FavoritesModal open={favOpen} onClose={() => setFavOpen(false)} />
 
-      <main style={layout.main}>
-        <div style={layout.grid}>
-
-          {/* ── Sidebar ────────────────────────────────────────────────── */}
-          <aside style={layout.sidebar}>
-            {/* Region filter */}
-            <div style={card}>
-              <h3 style={cardTitle}>Filter by Region</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {[['all','All Regions'],['na','North America'],['eu','Europe'],['as','Asia']].map(([id, label]) => (
-                  <button key={id}
-                    style={{ ...regionBtn, ...(region === id ? regionBtnActive : {}) }}
-                    onClick={() => setRegion(id)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* News */}
-            <div style={card}>
-              <h3 style={cardTitle}>Latest Headlines</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {news.length > 0 ? news.map((a, i) => (
-                  <div key={i} style={{ cursor: 'pointer' }}
-                    onClick={() => a.links?.web?.href && window.open(a.links.web.href, '_blank')}>
-                    <div style={newsCategory}>{a.categories?.[0]?.description || 'Sports'}</div>
-                    <div style={newsTitle}>{a.headline}</div>
-                    <div style={newsTime}>{a.published ? timeAgo(a.published) : ''}</div>
-                  </div>
-                )) : (
-                  <>
-                    {['Live scores powered by ESPN API', 'F1 data from OpenF1', 'Auto-refreshes every 60s'].map((t, i) => (
-                      <div key={i}>
-                        <div style={newsCategory}>Update</div>
-                        <div style={newsTitle}>{t}</div>
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
-            </div>
-          </aside>
+      <main style={mainStyle}>
+        <div className="home-grid">
 
           {/* ── Main scores area ───────────────────────────────────────── */}
-          <div style={layout.main2}>
+          <div style={{ minWidth: 0 }}>
             {/* Sport tabs */}
-            <nav style={tabBar}>
+            <nav className="home-tab-bar" style={tabBar}>
               {SPORTS.map(({ id, icon, name }) => (
                 <button key={id}
+                  className="home-tab-btn"
                   style={{ ...tabBtn, ...(activeTab === id ? tabBtnActive : {}) }}
                   onClick={() => setActiveTab(id)}>
                   {icon} {name}
@@ -175,6 +189,66 @@ export default function HomePage() {
             {/* Cards */}
             <div>{renderMatches()}</div>
           </div>
+
+          {/* ── Sidebar ────────────────────────────────────────────────── */}
+          <aside className="home-sidebar">
+            {/* Mobile toggle button */}
+            <button
+              className="home-sidebar-mobile-toggle"
+              onClick={() => setSidebarOpen(o => !o)}
+            >
+              <span>Filters &amp; Headlines</span>
+              <svg
+                width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5"
+                viewBox="0 0 24 24"
+                style={{ transition: 'transform .3s', transform: sidebarOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Sidebar content — always visible on desktop, toggled on mobile */}
+            <div className={`home-sidebar-content${sidebarOpen ? ' open' : ''}`}>
+              {/* Region filter */}
+              <div style={card}>
+                <h3 style={cardTitle}>Filter by Region</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {[['all','All Regions'],['na','North America'],['eu','Europe'],['as','Asia']].map(([id, label]) => (
+                    <button key={id}
+                      style={{ ...regionBtn, ...(region === id ? regionBtnActive : {}) }}
+                      onClick={() => setRegion(id)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* News */}
+              <div style={card}>
+                <h3 style={cardTitle}>Latest Headlines</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {news.length > 0 ? news.map((a, i) => (
+                    <div key={i} style={{ cursor: 'pointer' }}
+                      onClick={() => a.links?.web?.href && window.open(a.links.web.href, '_blank')}>
+                      <div style={newsCategory}>{a.categories?.[0]?.description || 'Sports'}</div>
+                      <div style={newsTitle}>{a.headline}</div>
+                      <div style={newsTime}>{a.published ? timeAgo(a.published) : ''}</div>
+                    </div>
+                  )) : (
+                    <>
+                      {['Live scores powered by ESPN API', 'F1 data from OpenF1', 'Auto-refreshes every 60s'].map((t, i) => (
+                        <div key={i}>
+                          <div style={newsCategory}>Update</div>
+                          <div style={newsTitle}>{t}</div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </aside>
+
         </div>
       </main>
     </>
@@ -182,12 +256,7 @@ export default function HomePage() {
 }
 
 /* ── Styles ─────────────────────────────────────────────────────────────────── */
-const layout = {
-  main:  { maxWidth: 1280, margin: '0 auto', padding: '24px 16px' },
-  grid:  { display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24 },
-  sidebar: { display: 'flex', flexDirection: 'column', gap: 18, minWidth: 0 },
-  main2: { minWidth: 0 },
-};
+const mainStyle = { maxWidth: 1280, margin: '0 auto', padding: '24px 16px' };
 
 const card      = { background: 'rgba(30,58,138,.38)', border: '1px solid rgba(30,64,175,.4)', borderRadius: 18, padding: '16px 18px' };
 const cardTitle = { fontSize: 11, fontWeight: 800, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 14 };
@@ -210,6 +279,7 @@ const tabBar = {
   display: 'flex', gap: 6, overflowX: 'auto',
   paddingBottom: 10, marginBottom: 14,
   scrollbarWidth: 'none',
+  WebkitOverflowScrolling: 'touch',
 };
 const tabBtn = {
   padding: '8px 16px', borderRadius: 20,
@@ -220,6 +290,6 @@ const tabBtn = {
 };
 const tabBtnActive = { background: '#2563eb', color: '#fff', boxShadow: '0 4px 14px rgba(37,99,235,.4)' };
 
-const empty   = { background: 'rgba(30,58,138,.25)', borderRadius: 20, padding: '60px 20px', textAlign: 'center', border: '1px solid rgba(30,64,175,.3)' };
-const retryBtn= { marginTop: 16, padding: '10px 22px', background: '#1d4ed8', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' };
-const f1Header= { fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center' };
+const empty    = { background: 'rgba(30,58,138,.25)', borderRadius: 20, padding: '60px 20px', textAlign: 'center', border: '1px solid rgba(30,64,175,.3)' };
+const retryBtn = { marginTop: 16, padding: '10px 22px', background: '#1d4ed8', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' };
+const f1Header = { fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center' };
