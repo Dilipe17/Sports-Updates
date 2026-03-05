@@ -327,7 +327,7 @@ export async function fetchESPNNews(sport = 'basketball', limit = 10) {
 
 // ─── AI Chat (AWS Bedrock via Lambda + API Gateway) ───────────────────────────
 
-const CHAT_API_URL = 'https://YOUR_API_GATEWAY_URL/chat';
+const CHAT_API_URL = 'https://cjer7mu9ek.execute-api.us-east-1.amazonaws.com/default/sports-hub-chat';
 
 export async function sendChatMessage(message, sport = 'all') {
   const res = await fetch(CHAT_API_URL, {
