@@ -7,51 +7,38 @@ import { SPORT_CONFIG, fetchSportMatches, fetchESPNHeadlines } from '../../../sh
 
 const SPORTS = Object.entries(SPORT_CONFIG).map(([id, cfg]) => ({ id, ...cfg }));
 
+// Grid and sidebar toggle are handled via JS width detection — no media query needed.
 const RESPONSIVE_CSS = `
-  .home-grid {
-    display: grid;
-    grid-template-columns: 1fr 260px;
-    gap: 24px;
-    align-items: start;
+  .home-sidebar-mobile-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(30,58,138,0.38);
+    border: 1px solid rgba(30,64,175,0.4);
+    border-radius: 14px;
+    color: #93c5fd;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s;
+    text-transform: uppercase;
+    letter-spacing: .06em;
   }
-  .home-sidebar { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-  .home-sidebar-mobile-toggle { display: none; }
-  .home-sidebar-content { display: flex; flex-direction: column; gap: 18px; }
-
-  @media (max-width: 900px) {
-    .home-grid { grid-template-columns: 1fr; }
-    .home-sidebar {
-      order: 2;
-      flex-direction: column;
-    }
-    .home-sidebar-mobile-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      padding: 12px 16px;
-      background: rgba(30,58,138,0.38);
-      border: 1px solid rgba(30,64,175,0.4);
-      border-radius: 14px;
-      color: #93c5fd;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background .15s;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
-    .home-sidebar-content {
-      overflow: hidden;
-      max-height: 0;
-      transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.28s ease;
-      opacity: 0;
-    }
-    .home-sidebar-content.open {
-      max-height: 900px;
-      opacity: 1;
-    }
+  .home-sidebar-content {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.28s ease;
+    opacity: 0;
+  }
+  .home-sidebar-content.open {
+    max-height: 900px;
+    opacity: 1;
   }
 
   @media (max-width: 480px) {
@@ -76,7 +63,14 @@ export default function HomePage() {
   const [news,          setNews]          = useState([]);
   const [favOpen,       setFavOpen]       = useState(false);
   const [sidebarOpen,   setSidebarOpen]   = useState(false);
+  const [isMobile,      setIsMobile]      = useState(() => window.innerWidth <= 900);
   const intervalRef = useRef(null);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 900);
+    window.addEventListener('resize', handler, { passive: true });
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   /* ── fetch matches ──────────────────────────────────────────────────────── */
   const loadMatches = useCallback(async (tab, force = false) => {
@@ -168,7 +162,12 @@ export default function HomePage() {
       <FavoritesModal open={favOpen} onClose={() => setFavOpen(false)} />
 
       <main style={mainStyle}>
-        <div className="home-grid">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 260px',
+          gap: 24,
+          alignItems: 'start',
+        }}>
 
           {/* ── Main scores area ───────────────────────────────────────── */}
           <div style={{ minWidth: 0 }}>
@@ -192,24 +191,27 @@ export default function HomePage() {
           </div>
 
           {/* ── Sidebar ────────────────────────────────────────────────── */}
-          <aside className="home-sidebar">
-            {/* Mobile toggle button */}
-            <button
-              className="home-sidebar-mobile-toggle"
-              onClick={() => setSidebarOpen(o => !o)}
-            >
-              <span>Filters &amp; Headlines</span>
-              <svg
-                width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5"
-                viewBox="0 0 24 24"
-                style={{ transition: 'transform .3s', transform: sidebarOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          <aside style={{ display: 'flex', flexDirection: 'column', gap: 18, minWidth: 0, order: isMobile ? 2 : 0 }}>
+            {/* Mobile toggle button — only rendered on mobile */}
+            {isMobile && (
+              <button
+                className="home-sidebar-mobile-toggle"
+                onClick={() => setSidebarOpen(o => !o)}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+                <span>Filters &amp; Headlines</span>
+                <svg
+                  width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5"
+                  viewBox="0 0 24 24"
+                  style={{ transition: 'transform .3s', transform: sidebarOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            )}
 
-            {/* Sidebar content — always visible on desktop, toggled on mobile */}
-            <div className={`home-sidebar-content${sidebarOpen ? ' open' : ''}`}>
+            {/* Sidebar content — always visible on desktop, animated toggle on mobile */}
+            <div className={isMobile ? `home-sidebar-content${sidebarOpen ? ' open' : ''}` : undefined}
+              style={isMobile ? undefined : { display: 'flex', flexDirection: 'column', gap: 18 }}>
               {/* Region filter */}
               <div style={card}>
                 <h3 style={cardTitle}>Filter by Region</h3>

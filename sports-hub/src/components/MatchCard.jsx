@@ -67,9 +67,9 @@ export default function MatchCard({ match, delay = 0 }) {
             <span>{match.status.toUpperCase()}</span>
           </span>
           <div style={s.score}>
-            <span>{match.score1 || '-'}</span>
+            <span style={s.scoreVal}>{match.score1 || '-'}</span>
             <span style={s.vs}>vs</span>
-            <span>{match.score2 || '-'}</span>
+            <span style={s.scoreVal}>{match.score2 || '-'}</span>
           </div>
           {match.gameClock && (
             <div style={s.clock}>
@@ -172,22 +172,22 @@ const s = {
   dateText: { fontSize: 10, color: '#93c5fd', flexShrink: 0 },
 
   body: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
   },
   team: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
-    width: 88, flexShrink: 0,
+    width: 72, flexShrink: 0,
   },
-  logo: { width: 52, height: 52, objectFit: 'contain', marginBottom: 6, borderRadius: '50%' },
+  logo: { width: 44, height: 44, objectFit: 'contain', marginBottom: 6, borderRadius: '50%' },
   logoFallback: {
-    width: 52, height: 52, borderRadius: '50%',
+    width: 44, height: 44, borderRadius: '50%',
     background: 'rgba(30,64,175,.7)', border: '2px solid #2563eb',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6,
+    fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 6,
   },
   teamName: {
     fontSize: 11, fontWeight: 700, color: '#fff',
-    textAlign: 'center', maxWidth: 84,
+    textAlign: 'center', maxWidth: 70,
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
 
@@ -201,10 +201,15 @@ const s = {
     fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: '.04em',
   },
   score: {
-    display: 'flex', alignItems: 'center', gap: 10,
-    fontSize: 26, fontWeight: 900, color: '#fff',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexWrap: 'wrap', gap: 6,
+    fontSize: 19, fontWeight: 900, color: '#fff', textAlign: 'center',
   },
-  vs:      { fontSize: 14, color: '#2563eb', fontWeight: 700 },
+  scoreVal: {
+    textAlign: 'center', wordBreak: 'break-word',
+    maxWidth: 110, lineHeight: 1.25,
+  },
+  vs:      { fontSize: 12, color: '#2563eb', fontWeight: 700, flexShrink: 0 },
   clock:   { fontSize: 11, color: '#67e8f9', fontWeight: 600, display: 'flex', gap: 4 },
   summary: { fontSize: 11, color: '#34d399', fontWeight: 600, textAlign: 'center' },
   potm:    { fontSize: 10, color: '#fbbf24', textAlign: 'center' },
