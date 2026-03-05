@@ -100,8 +100,9 @@ const CORS_HEADERS = {
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 exports.handler = async (event) => {
-  // Preflight
-  if (event.httpMethod === 'OPTIONS') {
+  // Preflight – handle both REST API v1 (httpMethod) and HTTP API v2 (requestContext.http.method)
+  const method = event.httpMethod || event.requestContext?.http?.method || '';
+  if (method === 'OPTIONS') {
     return { statusCode: 200, headers: CORS_HEADERS, body: '' };
   }
 
