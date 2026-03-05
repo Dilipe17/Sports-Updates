@@ -14,6 +14,7 @@ const GLOBAL_CSS = `
     background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #312e81 100%);
     min-height: 100vh;
     color: #fff;
+    overflow-x: hidden;
   }
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -34,6 +35,13 @@ const GLOBAL_CSS = `
     border-radius: 12px;
   }
   .fade-in { animation: fadeInUp .35s ease-out both; }
+
+  /* ── Global mobile safety ── */
+  img, svg { max-width: 100%; }
+  @media (max-width: 480px) {
+    /* Tighten main padding on small phones */
+    main { padding-left: 12px !important; padding-right: 12px !important; }
+  }
 `;
 
 export default function App() {
