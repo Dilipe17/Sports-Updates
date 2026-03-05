@@ -56,10 +56,19 @@ jobs:
         run: |
           cd lambda/chat
           npm install --omit=dev
-          zip -r function.zip . --exclude "*.zip"
+          zip -r function.zip . -x "*.zip"
+          # Try update first; if the function doesn't exist yet, create it
           aws lambda update-function-code \
             --function-name sports-hub-chat \
             --zip-file fileb://function.zip \
+            --region ${{ secrets.AWS_REGION }} \
+          || aws lambda create-function \
+            --function-name sports-hub-chat \
+            --runtime nodejs20.x \
+            --role ${{ secrets.LAMBDA_ROLE_ARN }} \
+            --handler index.handler \
+            --zip-file fileb://function.zip \
+            --timeout 30 \
             --region ${{ secrets.AWS_REGION }} || true
 
       # Step 9: Enable CORS on API Gateway so the browser preflight (OPTIONS) succeeds

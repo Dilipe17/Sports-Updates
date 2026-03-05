@@ -63,7 +63,8 @@ export default function ChatWidget() {
         const sport = detectSport(text.toLowerCase());
         const { reply } = await sendChatMessage(text, sport);
         html = reply.replace(/\n/g, '<br>');
-      } catch {
+      } catch (aiErr) {
+        console.error('[ChatWidget] AI call failed:', aiErr);
         // Fallback: local keyword matcher
         html = await buildReply(text.toLowerCase());
       }
