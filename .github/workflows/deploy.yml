@@ -55,7 +55,7 @@ jobs:
       - name: Deploy Lambda chat function
         run: |
           cd lambda/chat
-          npm ci --omit=dev
+          npm install --omit=dev
           zip -r function.zip . --exclude "*.zip"
           aws lambda update-function-code \
             --function-name sports-hub-chat \
