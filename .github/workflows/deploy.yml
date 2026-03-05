@@ -1,0 +1,52 @@
+name: Deploy Sports Hub to AWS S3
+
+# This runs automatically every time you (or anyone) saves/pushes
+# a change to the main branch on GitHub
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Download your code from GitHub
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up the tool that builds React websites
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Step 3: Install the website's dependencies (like installing apps)
+      - name: Install dependencies
+        working-directory: sports-hub
+        run: npm install
+
+      # Step 4: Build the website (compile React → plain HTML/JS/CSS files)
+      - name: Build website
+        working-directory: sports-hub
+        run: npm run build
+
+      # Step 5: Connect to your AWS account using the secret keys you'll add
+      - name: Connect to AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      # Step 6: Upload the built files to your S3 bucket
+      - name: Upload to S3
+        run: |
+          aws s3 sync sports-hub/dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+
+      # Step 7: Clear the CloudFront cache so visitors see the new version
+      - name: Clear CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
