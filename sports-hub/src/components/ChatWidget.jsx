@@ -85,8 +85,44 @@ export default function ChatWidget() {
 
   return (
     <>
+      <style>{`
+        @keyframes chatDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+        .chat-panel {
+          position: fixed; bottom: 90px; right: 24px;
+          width: 360px; height: 500px;
+          max-height: calc(100vh - 110px);
+          background: rgba(15,23,42,.97);
+          backdrop-filter: blur(16px);
+          border: 1px solid rgba(59,130,246,.3);
+          border-radius: 20px;
+          display: flex; flex-direction: column;
+          overflow: hidden; z-index: 999;
+          box-shadow: 0 24px 60px rgba(0,0,0,.5);
+          transition: opacity .22s, transform .22s;
+        }
+        .chat-fab {
+          position: fixed; bottom: 24px; right: 24px;
+          width: 56px; height: 56px; border-radius: 50%;
+          background: #2563eb; border: none;
+          cursor: pointer; z-index: 1000;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 8px 24px rgba(37,99,235,.5);
+          transition: transform .15s;
+        }
+        @media (max-width: 480px) {
+          .chat-panel {
+            right: 12px; left: 12px;
+            width: auto;
+            bottom: 84px;
+            border-radius: 16px;
+            height: 420px;
+          }
+          .chat-fab { right: 16px; bottom: 16px; width: 50px; height: 50px; }
+        }
+      `}</style>
+
       {/* Panel */}
-      <div style={{ ...s.panel, opacity: open ? 1 : 0, pointerEvents: open ? 'all' : 'none', transform: open ? 'translateY(0)' : 'translateY(16px)', transition: 'opacity .2s, transform .2s' }}>
+      <div className="chat-panel" style={{ opacity: open ? 1 : 0, pointerEvents: open ? 'all' : 'none', transform: open ? 'translateY(0)' : 'translateY(16px)' }}>
         <div style={s.panelHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span className="live-dot" />
@@ -121,11 +157,9 @@ export default function ChatWidget() {
       </div>
 
       {/* FAB */}
-      <button style={s.fab} onClick={() => setOpen(o => !o)} title="Sports AI">
+      <button className="chat-fab" onClick={() => setOpen(o => !o)} title="Sports AI">
         <span style={{ fontSize: 22 }}>{open ? '✕' : '💬'}</span>
       </button>
-
-      <style>{`@keyframes chatDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}`}</style>
     </>
   );
 }
@@ -253,18 +287,6 @@ async function buildReply(q) {
 
 /* ── Styles ──────────────────────────────────────────────────────────────────── */
 const s = {
-  panel: {
-    position: 'fixed', bottom: 90, right: 24,
-    width: 360, height: 500,
-    maxHeight: 'calc(100vh - 110px)',
-    background: 'rgba(15,23,42,.97)',
-    backdropFilter: 'blur(16px)',
-    border: '1px solid rgba(59,130,246,.3)',
-    borderRadius: 20,
-    display: 'flex', flexDirection: 'column',
-    overflow: 'hidden', zIndex: 999,
-    boxShadow: '0 24px 60px rgba(0,0,0,.5)',
-  },
   panelHeader: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     padding: '12px 16px',
@@ -307,13 +329,4 @@ const s = {
     flexShrink: 0, fontFamily: 'inherit',
   },
   sendDisabled: { background: 'rgba(30,64,175,.4)', cursor: 'not-allowed' },
-  fab: {
-    position: 'fixed', bottom: 24, right: 24,
-    width: 56, height: 56, borderRadius: '50%',
-    background: '#2563eb', border: 'none',
-    cursor: 'pointer', zIndex: 1000,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 8px 24px rgba(37,99,235,.5)',
-    transition: 'transform .15s',
-  },
 };

@@ -10,8 +10,9 @@ const SPORTS = Object.entries(SPORT_CONFIG).map(([id, cfg]) => ({ id, ...cfg }))
 const RESPONSIVE_CSS = `
   .home-grid {
     display: grid;
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 1fr 260px;
     gap: 24px;
+    align-items: start;
   }
   .home-sidebar { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
   .home-sidebar-mobile-toggle { display: none; }
