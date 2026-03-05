@@ -106,6 +106,7 @@ export async function fetchStandings(sport, league) {
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports';
 
 const ESPN_SPORT_PATHS = {
+  cricket:    'cricket/8676',
   football:   'football/nfl',
   basketball: 'basketball/nba',
   baseball:   'baseball/mlb',
@@ -123,6 +124,47 @@ export async function fetchESPNScoreboard(sport = 'basketball') {
   const res = await fetch(`${ESPN_BASE}/${path}/scoreboard`);
   if (!res.ok) throw new Error(`ESPN API error ${res.status}`);
   return res.json();
+}
+
+/**
+ * Normalize a raw ESPN scoreboard response into the game shape used by ScoreCard.
+ * @param {object} espnData - Raw ESPN scoreboard JSON
+ * @param {string} sport    - Sport identifier (e.g. 'basketball')
+ * @returns {Array}
+ */
+export function normalizeESPNGames(espnData, sport) {
+  const events = espnData?.events ?? [];
+  return events.map((event) => {
+    const comp = event.competitions?.[0] ?? {};
+    const competitors = comp.competitors ?? [];
+    const home = competitors.find((c) => c.homeAway === 'home') ?? competitors[0] ?? {};
+    const away = competitors.find((c) => c.homeAway === 'away') ?? competitors[1] ?? {};
+    const statusName = event.status?.type?.name ?? '';
+    const isLive = statusName === 'STATUS_IN_PROGRESS';
+    const detail = event.status?.type?.shortDetail ?? '';
+    return {
+      id: event.id,
+      sport,
+      homeTeam: {
+        id: home.team?.id,
+        name: home.team?.displayName ?? home.team?.name ?? 'Home',
+        abbreviation: home.team?.abbreviation ?? '',
+        logo: home.team?.logo ?? '',
+      },
+      awayTeam: {
+        id: away.team?.id,
+        name: away.team?.displayName ?? away.team?.name ?? 'Away',
+        abbreviation: away.team?.abbreviation ?? '',
+        logo: away.team?.logo ?? '',
+      },
+      homeScore: parseInt(home.score ?? '0', 10),
+      awayScore: parseInt(away.score ?? '0', 10),
+      quarter: null,
+      timeRemaining: detail,
+      isLive,
+      venue: comp.venue?.fullName ?? '',
+    };
+  });
 }
 
 /**

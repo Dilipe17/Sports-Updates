@@ -30,7 +30,9 @@ export default function ScoreCard({ game }) {
       <div style={styles.scoreRow}>
         {/* Home team */}
         <div style={styles.teamBlock}>
-          <span style={styles.teamLogo}>{homeTeam.logo}</span>
+          {homeTeam.logo?.startsWith('http')
+            ? <img src={homeTeam.logo} alt={homeTeam.name} style={styles.teamLogo} />
+            : <span style={{ fontSize: 28 }}>{homeTeam.logo || homeTeam.abbreviation}</span>}
           <span style={styles.teamName}>{homeTeam.name}</span>
           <span
             style={{
@@ -46,7 +48,9 @@ export default function ScoreCard({ game }) {
 
         {/* Away team */}
         <div style={{ ...styles.teamBlock, alignItems: 'flex-end' }}>
-          <span style={styles.teamLogo}>{awayTeam.logo}</span>
+          {awayTeam.logo?.startsWith('http')
+            ? <img src={awayTeam.logo} alt={awayTeam.name} style={styles.teamLogo} />
+            : <span style={{ fontSize: 28 }}>{awayTeam.logo || awayTeam.abbreviation}</span>}
           <span style={styles.teamName}>{awayTeam.name}</span>
           <span
             style={{
@@ -105,7 +109,7 @@ const styles = {
     flex: 1,
     gap: 4,
   },
-  teamLogo: { fontSize: 28 },
+  teamLogo: { fontSize: 28, width: 32, height: 32, objectFit: 'contain' },
   teamName: {
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.semibold,

@@ -87,6 +87,7 @@ export const WEB_SHADOW = {
 };
 
 export const SPORT_CATEGORIES = [
+  { id: 'cricket',    label: 'Cricket',    icon: '🏏' },
   { id: 'football',   label: 'Football',   icon: '🏈' },
   { id: 'basketball', label: 'Basketball', icon: '🏀' },
   { id: 'baseball',   label: 'Baseball',   icon: '⚾' },
