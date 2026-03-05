@@ -3,6 +3,7 @@ import {
   fetchSportMatches,
   fetchAllSportsMatches,
   getAllCachedMatches,
+  sendChatMessage,
   SPORT_CONFIG,
 } from '../../../shared/api.js';
 
@@ -56,7 +57,16 @@ export default function ChatWidget() {
     setMessages(prev => [...prev, { id: typingId, role: 'ai', isTyping: true, html: '' }]);
 
     try {
-      const html = await buildReply(text.toLowerCase());
+      let html;
+      try {
+        // Primary: Bedrock AI via Lambda
+        const sport = detectSport(text.toLowerCase());
+        const { reply } = await sendChatMessage(text, sport);
+        html = reply.replace(/\n/g, '<br>');
+      } catch {
+        // Fallback: local keyword matcher
+        html = await buildReply(text.toLowerCase());
+      }
       setMessages(prev => prev.filter(m => m.id !== typingId));
       setMessages(prev => [...prev, { id: uid(), role: 'ai', html }]);
     } catch {
@@ -117,6 +127,18 @@ export default function ChatWidget() {
       <style>{`@keyframes chatDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}`}</style>
     </>
   );
+}
+
+/* ── Detect sport from user message ─────────────────────────────────────────── */
+function detectSport(q) {
+  if (q.includes('cricket') || q.includes('ipl') || q.includes('t20') || q.includes('odi') || q.includes('test match')) return 'cricket';
+  if (q.includes('soccer') || q.includes('football') && q.includes('premier')) return 'soccer';
+  if (q.includes('nfl') || q.includes('american football')) return 'football';
+  if (q.includes('nba') || q.includes('basketball')) return 'basketball';
+  if (q.includes('mlb') || q.includes('baseball')) return 'baseball';
+  if (q.includes('tennis')) return 'tennis';
+  if (q.includes('f1') || q.includes('formula') || q.includes('grand prix')) return 'f1';
+  return 'all';
 }
 
 /* ── Local AI reply builder ──────────────────────────────────────────────────── */
