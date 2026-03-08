@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { fetchStandingsData, STANDINGS_CONFIG } from '../../../shared/api.js';
+import { fetchStandingsData, fetchF1ChampionshipStandings, STANDINGS_CONFIG } from '../../../shared/api.js';
 
 export default function StandingsPanel({ sportId }) {
   const [open,        setOpen]        = useState(false);
@@ -16,8 +16,13 @@ export default function StandingsPanel({ sportId }) {
     setLoading(true);
     setError('');
     try {
-      const result = await fetchStandingsData(sportId, idx);
-      setData(result?.data || null);
+      if (sportId === 'f1') {
+        const result = await fetchF1ChampionshipStandings();
+        setData(result ? { _f1: true, ...result } : null);
+      } else {
+        const result = await fetchStandingsData(sportId, idx);
+        setData(result?.data || null);
+      }
     } catch (e) {
       setError('Failed to load standings. Try again later.');
     } finally {
@@ -69,14 +74,12 @@ function StandingsTable({ sportId, data }) {
   const isCricket= sportId === 'cricket';
   const children = data.children || [];
 
-  // ── F1 ──────────────────────────────────────────────────────────────────────
-  if (isF1 && children.length >= 2) {
-    const driverGroup      = children.find(c => (c.name||'').toLowerCase().includes('driver'));
-    const constructorGroup = children.find(c => (c.name||'').toLowerCase().includes('constructor'));
+  // ── F1 (Jolpica data) ───────────────────────────────────────────────────────
+  if (isF1 && data._f1) {
     return (
       <>
-        <F1Group entries={driverGroup?.standings?.entries || []} label="Driver Standings" icon="🏎️" />
-        <F1Group entries={constructorGroup?.standings?.entries || []} label="Constructor Standings" icon="🏗️" />
+        <F1JolpikaGroup entries={data.drivers}      label="Driver Standings"      icon="🏎️" />
+        <F1JolpikaGroup entries={data.constructors} label="Constructor Standings" icon="🏗️" isConstructor />
       </>
     );
   }
@@ -168,6 +171,36 @@ function StandingsTable({ sportId, data }) {
           <span style={{ color:'#ef4444' }}>■</span> Relegation Zone
         </div>
       )}
+    </div>
+  );
+}
+
+function F1JolpikaGroup({ entries, label, icon, isConstructor }) {
+  if (!entries || !entries.length) return null;
+  return (
+    <div style={s.groupWrap}>
+      <div style={s.groupTitle}>{icon} {label}</div>
+      <table style={s.table}>
+        <thead><tr style={s.thead}>
+          {['#', isConstructor ? 'Constructor' : 'Driver', 'Team', 'W', 'Pts'].map((h, i) =>
+            <th key={h} style={i <= 1 ? s.thLeft : s.th}>{h}</th>
+          )}
+        </tr></thead>
+        <tbody>{entries.map((e, i) => (
+          <tr key={i} style={{ ...s.tr, borderLeft: i < 3 ? '2px solid #fbbf24' : 'none' }}>
+            <td style={s.tdRank}>{e.rank}</td>
+            <td style={s.tdTeam}>
+              <span style={{ fontWeight: 700 }}>{e.name}</span>
+              {!isConstructor && e.code && <span style={{ fontSize: 10, color: '#60a5fa', marginLeft: 4 }}>({e.code})</span>}
+            </td>
+            <td style={{ ...s.td, textAlign: 'left', color: '#94a3b8' }}>
+              {isConstructor ? (e.nat || '') : (e.team || '')}
+            </td>
+            <td style={{ ...s.td, color: '#4ade80' }}>{e.wins}</td>
+            <td style={{ ...s.td, color: '#fbbf24', fontWeight: 700 }}>{e.points}</td>
+          </tr>
+        ))}</tbody>
+      </table>
     </div>
   );
 }

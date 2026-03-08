@@ -101,12 +101,15 @@ export function parseSportHeader(data, sport = 'cricket') {
       if (idx !== -1) leaguePriority = idx + 1;
     }
     // For cricket, detect major ICC events early so per-event priority can be assigned below
+    // Check all name fields + slug because ESPN sometimes uses shortName/abbreviation that omits "World Cup"
+    const leagueFullNameLower  = (league.name || '').toLowerCase();
+    const leagueShortNameLower = (league.shortName || league.abbreviation || '').toLowerCase();
+    const _wcCheck = s =>
+      s.includes('world cup') || s.includes('champions trophy') ||
+      s.includes('world test championship') || s.includes('wc ') ||
+      (s.includes('icc') && s.includes('final'));
     const isCricketWorldCup = sport === 'cricket' && (
-      leagueNameLower.includes('world cup') ||
-      leagueNameLower.includes('champions trophy') ||
-      leagueNameLower.includes('world test championship') ||
-      leagueNameLower.includes('wc ') ||
-      (leagueNameLower.includes('icc') && leagueNameLower.includes('final'))
+      _wcCheck(leagueFullNameLower) || _wcCheck(leagueShortNameLower) || _wcCheck(leagueSlug)
     );
     for (const ev of (league.events || [])) {
       const competitors = ev.competitors || [];
@@ -146,12 +149,16 @@ export function parseSportHeader(data, sport = 'cricket') {
       let leagueGroup = 'other';
       if (sport === 'cricket') {
         const lnLower = (league.name || '').toLowerCase();
+        const evNameLower = (ev.name || '').toLowerCase();
+        // Also detect WC from event name as a fallback (e.g. "Final - ICC Women's World Cup")
+        const evIsWorldCup = isCricketWorldCup || _wcCheck(evNameLower);
         if (lnLower.includes('indian premier') || lnLower.includes('ipl') || leagueName.toLowerCase().includes('ipl')) {
           leagueGroup = 'ipl';
           leaguePriority = 2;
-        } else if (isCricketWorldCup) {
+        } else if (evIsWorldCup) {
           leagueGroup = 'worldcup';
-          leaguePriority = 1;
+          // Finals/Semis get sub-priority 0, group stage gets 1
+          leaguePriority = (evNameLower.includes('final') || evNameLower.includes('semi')) ? 0 : 1;
         } else if (isInternational) {
           leagueGroup = 'international';
           leaguePriority = 5;
@@ -342,6 +349,50 @@ export async function fetchStandingsData(sportId, leagueIdx = 0) {
   const data = await res.json();
   _standingsCache[cacheKey] = { data, ts: Date.now() };
   return { data, cfg, configs };
+}
+
+// ─── F1 Championship Standings (Jolpica/Ergast) ──────────────────────────────
+
+const _f1StandingsCache = { data: null, ts: 0 };
+
+export async function fetchF1ChampionshipStandings() {
+  if (_f1StandingsCache.data && (Date.now() - _f1StandingsCache.ts) < 300000) {
+    return _f1StandingsCache.data;
+  }
+  try {
+    const year = new Date().getFullYear();
+    const [drvRes, ctRes] = await Promise.all([
+      fetch(`https://api.jolpi.ca/ergast/f1/${year}/driverStandings.json`),
+      fetch(`https://api.jolpi.ca/ergast/f1/${year}/constructorStandings.json`),
+    ]);
+    if (!drvRes.ok || !ctRes.ok) return null;
+    const [drvData, ctData] = await Promise.all([drvRes.json(), ctRes.json()]);
+    const driverList      = drvData?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [];
+    const constructorList = ctData?.MRData?.StandingsTable?.StandingsLists?.[0]?.ConstructorStandings || [];
+    const result = {
+      drivers: driverList.map(d => ({
+        rank:        d.position,
+        name:        `${d.Driver.givenName} ${d.Driver.familyName}`,
+        code:        d.Driver.code || '',
+        team:        d.Constructors?.[0]?.name || '',
+        teamNat:     d.Constructors?.[0]?.nationality || '',
+        points:      d.points,
+        wins:        d.wins,
+      })),
+      constructors: constructorList.map(c => ({
+        rank:   c.position,
+        name:   c.Constructor.name,
+        nat:    c.Constructor.nationality || '',
+        points: c.points,
+        wins:   c.wins,
+      })),
+    };
+    _f1StandingsCache.data = result;
+    _f1StandingsCache.ts   = Date.now();
+    return result;
+  } catch {
+    return null;
+  }
 }
 
 // ─── News ────────────────────────────────────────────────────────────────────

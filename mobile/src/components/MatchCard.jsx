@@ -64,7 +64,7 @@ function F1Card({ match }) {
             <View key={d.driverNumber} style={s.leaderboardRow}>
               <Text style={s.leaderboardPos}>{d.position}</Text>
               <View style={[s.teamDot, { backgroundColor: d.teamColor }]} />
-              <Text style={s.leaderboardName}>{d.name}</Text>
+              <Text style={s.leaderboardName}>{d.fullName || d.name}</Text>
               <Text style={s.leaderboardTeam} numberOfLines={1}>{d.team}</Text>
             </View>
           ))}
