@@ -1,7 +1,22 @@
 import React from 'react';
+import { fetchF1LivePositions } from '../../../shared/api.js';
 
 /* ── F1 race card ─────────────────────────────────────────────────────────── */
 function F1Card({ match, delay }) {
+  const [positions, setPositions] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!match.isLive) return;
+    let cancelled = false;
+    const load = async () => {
+      const data = await fetchF1LivePositions();
+      if (!cancelled) setPositions(data);
+    };
+    load();
+    const timer = setInterval(load, 10000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [match.isLive, match.id]);
+
   const badgeColor = match.isLive ? '#16a34a' : match.isComplete ? '#4b5563' : '#2563eb';
   return (
     <div className="fade-in" style={{ ...s.card, animationDelay: `${delay}ms`, borderColor: match.isLive ? 'rgba(34,197,94,.4)' : 'rgba(30,64,175,.35)' }}>
@@ -23,6 +38,21 @@ function F1Card({ match, delay }) {
             onError={e => { e.target.style.display = 'none'; }} />
         )}
       </div>
+
+      {/* Live leaderboard — shown only during an active race */}
+      {match.isLive && positions && positions.length > 0 && (
+        <div style={s.leaderboard}>
+          <div style={s.leaderboardTitle}>🏁 Live Positions</div>
+          {positions.slice(0, 10).map(d => (
+            <div key={d.driverNumber} style={s.leaderboardRow}>
+              <span style={s.pos}>{d.position}</span>
+              <span style={{ ...s.teamDot, background: d.teamColor }} />
+              <span style={s.driverName}>{d.name}</span>
+              <span style={s.teamName}>{d.team}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -224,6 +254,15 @@ const s = {
   f1Date:     { fontSize: 15, fontWeight: 700, color: '#fff' },
   f1Time:     { fontSize: 12, color: '#93c5fd' },
   flag:       { width: 48, height: 36, borderRadius: 4, objectFit: 'cover' },
+
+  // F1 live leaderboard
+  leaderboard:      { marginTop: 12, borderTop: '1px solid rgba(30,64,175,.35)', paddingTop: 10 },
+  leaderboardTitle: { fontSize: 11, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 },
+  leaderboardRow:   { display: 'flex', alignItems: 'center', gap: 8, paddingVertical: 3, paddingTop: 3, paddingBottom: 3 },
+  pos:              { width: 20, fontSize: 12, fontWeight: 800, color: '#93c5fd', textAlign: 'right', flexShrink: 0 },
+  teamDot:          { width: 8, height: 8, borderRadius: '50%', flexShrink: 0 },
+  driverName:       { fontSize: 13, fontWeight: 700, color: '#fff', minWidth: 38 },
+  teamName:         { fontSize: 11, color: '#93c5fd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
 };
 
 const sh = {
