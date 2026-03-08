@@ -76,8 +76,10 @@ function StandingsTable({ sportId, data }) {
 
   // ── F1 (Jolpica data) ───────────────────────────────────────────────────────
   if (isF1 && data._f1) {
+    const seasonLabel = data.season ? `${data.season} Season · After Round ${data.round}` : '';
     return (
       <>
+        {seasonLabel && <div style={{ padding: '6px 12px 0', fontSize: 11, color: '#60a5fa', fontWeight: 600 }}>{seasonLabel}</div>}
         <F1JolpikaGroup entries={data.drivers}      label="Driver Standings"      icon="🏎️" />
         <F1JolpikaGroup entries={data.constructors} label="Constructor Standings" icon="🏗️" isConstructor />
       </>
@@ -182,7 +184,7 @@ function F1JolpikaGroup({ entries, label, icon, isConstructor }) {
       <div style={s.groupTitle}>{icon} {label}</div>
       <table style={s.table}>
         <thead><tr style={s.thead}>
-          {['#', isConstructor ? 'Constructor' : 'Driver', 'Team', 'W', 'Pts'].map((h, i) =>
+          {['#', isConstructor ? 'Constructor' : 'Driver', isConstructor ? 'Nat' : 'Team', 'W', 'Pts'].map((h, i) =>
             <th key={h} style={i <= 1 ? s.thLeft : s.th}>{h}</th>
           )}
         </tr></thead>

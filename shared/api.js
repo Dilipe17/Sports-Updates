@@ -360,16 +360,20 @@ export async function fetchF1ChampionshipStandings() {
     return _f1StandingsCache.data;
   }
   try {
-    const year = new Date().getFullYear();
+    // Use /current/ so we always get the latest-round standings regardless of season start
     const [drvRes, ctRes] = await Promise.all([
-      fetch(`https://api.jolpi.ca/ergast/f1/${year}/driverStandings.json`),
-      fetch(`https://api.jolpi.ca/ergast/f1/${year}/constructorStandings.json`),
+      fetch('https://api.jolpi.ca/ergast/f1/current/driverStandings.json'),
+      fetch('https://api.jolpi.ca/ergast/f1/current/constructorStandings.json'),
     ]);
     if (!drvRes.ok || !ctRes.ok) return null;
     const [drvData, ctData] = await Promise.all([drvRes.json(), ctRes.json()]);
-    const driverList      = drvData?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [];
+    const standingsList   = drvData?.MRData?.StandingsTable?.StandingsLists?.[0];
+    const driverList      = standingsList?.DriverStandings || [];
     const constructorList = ctData?.MRData?.StandingsTable?.StandingsLists?.[0]?.ConstructorStandings || [];
-    const result = {
+    if (!driverList.length) return null;            // season hasn't started yet
+    const season = standingsList?.season || '';
+    const round  = standingsList?.round  || '';
+    const result = { season, round,
       drivers: driverList.map(d => ({
         rank:        d.position,
         name:        `${d.Driver.givenName} ${d.Driver.familyName}`,
