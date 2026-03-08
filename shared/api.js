@@ -101,12 +101,15 @@ export function parseSportHeader(data, sport = 'cricket') {
       if (idx !== -1) leaguePriority = idx + 1;
     }
     // For cricket, detect major ICC events early so per-event priority can be assigned below
+    // Check all name fields + slug because ESPN sometimes uses shortName/abbreviation that omits "World Cup"
+    const leagueFullNameLower  = (league.name || '').toLowerCase();
+    const leagueShortNameLower = (league.shortName || league.abbreviation || '').toLowerCase();
+    const _wcCheck = s =>
+      s.includes('world cup') || s.includes('champions trophy') ||
+      s.includes('world test championship') || s.includes('wc ') ||
+      (s.includes('icc') && s.includes('final'));
     const isCricketWorldCup = sport === 'cricket' && (
-      leagueNameLower.includes('world cup') ||
-      leagueNameLower.includes('champions trophy') ||
-      leagueNameLower.includes('world test championship') ||
-      leagueNameLower.includes('wc ') ||
-      (leagueNameLower.includes('icc') && leagueNameLower.includes('final'))
+      _wcCheck(leagueFullNameLower) || _wcCheck(leagueShortNameLower) || _wcCheck(leagueSlug)
     );
     for (const ev of (league.events || [])) {
       const competitors = ev.competitors || [];
@@ -146,12 +149,16 @@ export function parseSportHeader(data, sport = 'cricket') {
       let leagueGroup = 'other';
       if (sport === 'cricket') {
         const lnLower = (league.name || '').toLowerCase();
+        const evNameLower = (ev.name || '').toLowerCase();
+        // Also detect WC from event name as a fallback (e.g. "Final - ICC Women's World Cup")
+        const evIsWorldCup = isCricketWorldCup || _wcCheck(evNameLower);
         if (lnLower.includes('indian premier') || lnLower.includes('ipl') || leagueName.toLowerCase().includes('ipl')) {
           leagueGroup = 'ipl';
           leaguePriority = 2;
-        } else if (isCricketWorldCup) {
+        } else if (evIsWorldCup) {
           leagueGroup = 'worldcup';
-          leaguePriority = 1;
+          // Finals/Semis get sub-priority 0, group stage gets 1
+          leaguePriority = (evNameLower.includes('final') || evNameLower.includes('semi')) ? 0 : 1;
         } else if (isInternational) {
           leagueGroup = 'international';
           leaguePriority = 5;
