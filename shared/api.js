@@ -351,6 +351,50 @@ export async function fetchStandingsData(sportId, leagueIdx = 0) {
   return { data, cfg, configs };
 }
 
+// ─── F1 Championship Standings (Jolpica/Ergast) ──────────────────────────────
+
+const _f1StandingsCache = { data: null, ts: 0 };
+
+export async function fetchF1ChampionshipStandings() {
+  if (_f1StandingsCache.data && (Date.now() - _f1StandingsCache.ts) < 300000) {
+    return _f1StandingsCache.data;
+  }
+  try {
+    const year = new Date().getFullYear();
+    const [drvRes, ctRes] = await Promise.all([
+      fetch(`https://api.jolpi.ca/ergast/f1/${year}/driverStandings.json`),
+      fetch(`https://api.jolpi.ca/ergast/f1/${year}/constructorStandings.json`),
+    ]);
+    if (!drvRes.ok || !ctRes.ok) return null;
+    const [drvData, ctData] = await Promise.all([drvRes.json(), ctRes.json()]);
+    const driverList      = drvData?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [];
+    const constructorList = ctData?.MRData?.StandingsTable?.StandingsLists?.[0]?.ConstructorStandings || [];
+    const result = {
+      drivers: driverList.map(d => ({
+        rank:        d.position,
+        name:        `${d.Driver.givenName} ${d.Driver.familyName}`,
+        code:        d.Driver.code || '',
+        team:        d.Constructors?.[0]?.name || '',
+        teamNat:     d.Constructors?.[0]?.nationality || '',
+        points:      d.points,
+        wins:        d.wins,
+      })),
+      constructors: constructorList.map(c => ({
+        rank:   c.position,
+        name:   c.Constructor.name,
+        nat:    c.Constructor.nationality || '',
+        points: c.points,
+        wins:   c.wins,
+      })),
+    };
+    _f1StandingsCache.data = result;
+    _f1StandingsCache.ts   = Date.now();
+    return result;
+  } catch {
+    return null;
+  }
+}
+
 // ─── News ────────────────────────────────────────────────────────────────────
 
 export async function fetchESPNHeadlines(sport = 'nfl', limit = 5) {

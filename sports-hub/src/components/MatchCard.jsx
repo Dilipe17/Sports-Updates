@@ -47,7 +47,7 @@ function F1Card({ match, delay }) {
             <div key={d.driverNumber} style={s.leaderboardRow}>
               <span style={s.pos}>{d.position}</span>
               <span style={{ ...s.teamDot, background: d.teamColor }} />
-              <span style={s.driverName}>{d.name}</span>
+              <span style={s.driverName}>{d.fullName || d.name}</span>
               <span style={s.teamName}>{d.team}</span>
             </div>
           ))}
