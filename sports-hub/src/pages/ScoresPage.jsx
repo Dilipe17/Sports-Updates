@@ -1,57 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { SPACING } from '../../../shared/theme.js';
-import { fetchESPNScoreboard, normalizeESPNGames, MOCK_LIVE_GAMES } from '../../../shared/api.js';
+import { fetchSportMatches, SPORT_CONFIG } from '../../../shared/api.js';
 import SectionHeading from '../components/SectionHeading';
 import SportCategoryBar from '../components/SportCategoryBar';
-import ScoreCard from '../components/ScoreCard';
+import MatchCard from '../components/MatchCard';
 
-const ALL_SPORTS = ['cricket', 'football', 'basketball', 'baseball', 'soccer', 'hockey'];
+const ALL_SPORTS = Object.keys(SPORT_CONFIG); // cricket, soccer, tennis, nfl, f1, baseball, basketball
 
 export default function ScoresPage() {
   const [selectedSport, setSelectedSport] = useState('all');
-  const [games, setGames] = useState(MOCK_LIVE_GAMES);
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadScores() {
-      const sportsToFetch = selectedSport === 'all' ? ALL_SPORTS : [selectedSport];
-      const results = await Promise.allSettled(
-        sportsToFetch.map((s) => fetchESPNScoreboard(s).then((d) => normalizeESPNGames(d, s)))
-      );
+    async function load() {
+      const sports = selectedSport === 'all' ? ALL_SPORTS : [selectedSport];
+      const results = await Promise.allSettled(sports.map(s => fetchSportMatches(s)));
       if (cancelled) return;
-      const fetched = results
-        .filter((r) => r.status === 'fulfilled')
-        .flatMap((r) => r.value);
-      if (fetched.length > 0) setGames(fetched);
+      const all = results.flatMap((r, i) =>
+        r.status === 'fulfilled' ? r.value : []
+      );
+      setMatches(all);
+      setLoading(false);
     }
 
-    loadScores();
-    const interval = setInterval(loadScores, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+    setLoading(true);
+    load();
+    const timer = setInterval(load, 30_000);
+    return () => { cancelled = true; clearInterval(timer); };
   }, [selectedSport]);
 
-  const filtered = selectedSport === 'all'
-    ? games
-    : games.filter((g) => g.sport === selectedSport);
+  const liveMatches     = matches.filter(m => m.isLive);
+  const otherMatches    = matches.filter(m => !m.isLive);
 
   return (
     <div>
-      <SectionHeading title="Scores" />
+      <SectionHeading title="Live Scores" />
       <SportCategoryBar selected={selectedSport} onSelect={setSelectedSport} />
       <div style={{ height: SPACING.lg }} />
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <p style={styles.empty}>Loading scores…</p>
+      ) : matches.length === 0 ? (
         <p style={styles.empty}>No games found.</p>
       ) : (
-        <div style={styles.grid}>
-          {filtered.map((game) => (
-            <ScoreCard key={game.id} game={game} />
-          ))}
-        </div>
+        <>
+          {liveMatches.length > 0 && (
+            <>
+              <div style={styles.sectionLabel}>🔴 LIVE NOW</div>
+              <div style={styles.grid}>
+                {liveMatches.map((m, i) => <MatchCard key={m.id || i} match={m} delay={i * 40} />)}
+              </div>
+              <div style={{ height: SPACING.lg }} />
+            </>
+          )}
+          <div style={styles.grid}>
+            {otherMatches.map((m, i) => <MatchCard key={m.id || i} match={m} delay={i * 40} />)}
+          </div>
+        </>
       )}
     </div>
   );
@@ -60,8 +68,15 @@ export default function ScoresPage() {
 const styles = {
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
     gap: 16,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#4ade80',
+    letterSpacing: '.08em',
+    marginBottom: 10,
   },
   empty: {
     color: '#A0AEC0',

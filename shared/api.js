@@ -404,7 +404,8 @@ export async function fetchF1ChampionshipStandings() {
 export async function fetchESPNHeadlines(sport = 'nfl', limit = 5) {
   const paths = {
     nfl: 'football/nfl', basketball: 'basketball/nba', baseball: 'baseball/mlb',
-    soccer: 'soccer/eng.1', cricket: 'cricket/8676', hockey: 'hockey/nhl', tennis: 'tennis/atp',
+    soccer: 'soccer/eng.1', cricket: 'cricket/8676', hockey: 'hockey/nhl',
+    tennis: 'tennis/atp', f1: 'racing/f1',
   };
   const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${paths[sport] || 'football/nfl'}/news?limit=${limit}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
