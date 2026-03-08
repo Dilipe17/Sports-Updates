@@ -122,13 +122,17 @@ export default function HomePage() {
     );
 
     if (activeTab === 'cricket') {
-      const groups = { ipl: [], international: [], domestic: [] };
+      const groups = { worldcup: [], ipl: [], international: [], domestic: [] };
       matches.forEach(m => { (groups[m.leagueGroup] || groups.domestic).push(m); });
       let idx = 0;
       return (
         <>
+          {groups.worldcup.length > 0 && <>
+            <SectionHeader icon="🏆" title="Major Events" count={groups.worldcup.length} />
+            {groups.worldcup.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
+          </>}
           {groups.ipl.length > 0 && <>
-            <SectionHeader icon="🏆" title="IPL T20" count={groups.ipl.length} />
+            <SectionHeader icon="🔵" title="IPL T20" count={groups.ipl.length} />
             {groups.ipl.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
           </>}
           {groups.international.length > 0 && <>
@@ -146,7 +150,7 @@ export default function HomePage() {
     if (activeTab === 'f1') {
       return (
         <>
-          <div style={f1Header}>🏎️ <strong>2025 F1 Race Calendar</strong> <span style={{ fontSize: 11, color: '#93c5fd' }}>Powered by OpenF1</span></div>
+          <div style={f1Header}>🏎️ <strong>{new Date().getFullYear()} F1 Race Calendar</strong> <span style={{ fontSize: 11, color: '#93c5fd' }}>Powered by OpenF1</span></div>
           {matches.map((m, i) => <MatchCard key={m.id} match={m} delay={i * 70} />)}
         </>
       );

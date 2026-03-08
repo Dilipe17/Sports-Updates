@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, FlatList, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import {
   COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS,
@@ -31,52 +31,56 @@ export default function ScoresScreen() {
     return () => clearInterval(intervalRef.current);
   }, [activeTab, loadMatches]);
 
-  const renderMatchContent = () => {
-    if (loading) {
-      return [1, 2, 3].map(i => <MatchCardSkeleton key={i} />);
-    }
-    if (!matches.length) {
-      return (
-        <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>{SPORT_CONFIG[activeTab]?.icon}</Text>
-          <Text style={styles.emptyText}>
-            No {SPORT_CONFIG[activeTab]?.name} scores right now.
-          </Text>
-        </View>
-      );
-    }
+  const renderMatches = () => {
+    if (loading) return [1, 2, 3].map(i => <MatchCardSkeleton key={i} />);
+
+    if (!matches.length) return (
+      <View style={styles.empty}>
+        <Text style={styles.emptyIcon}>{SPORT_CONFIG[activeTab]?.icon}</Text>
+        <Text style={styles.emptyText}>No {SPORT_CONFIG[activeTab]?.name} scores right now.</Text>
+      </View>
+    );
+
     if (activeTab === 'cricket') {
-      const groups = { ipl: [], international: [], domestic: [] };
-      matches.forEach(m => { (groups[m.leagueGroup] || groups.domestic).push(m); });
+      const g = { worldcup: [], ipl: [], international: [], domestic: [] };
+      matches.forEach(m => { (g[m.leagueGroup] || g.domestic).push(m); });
       return (
         <>
-          {groups.ipl.length > 0 && (
-            <>
-              <SectionHeader icon="🏆" title="IPL T20" count={groups.ipl.length} />
-              {groups.ipl.map(m => <MatchCard key={m.id} match={m} />)}
-            </>
-          )}
-          {groups.international.length > 0 && (
-            <>
-              <SectionHeader icon="🌍" title="International" count={groups.international.length} />
-              {groups.international.map(m => <MatchCard key={m.id} match={m} />)}
-            </>
-          )}
-          {groups.domestic.length > 0 && (
-            <>
-              <SectionHeader icon="🏏" title="Domestic" count={groups.domestic.length} />
-              {groups.domestic.map(m => <MatchCard key={m.id} match={m} />)}
-            </>
-          )}
+          {g.worldcup.length > 0 && <>
+            <SectionHeader icon="🏆" title="Major Events" count={g.worldcup.length} />
+            {g.worldcup.map(m => <MatchCard key={m.id} match={m} />)}
+          </>}
+          {g.ipl.length > 0 && <>
+            <SectionHeader icon="🔵" title="IPL T20" count={g.ipl.length} />
+            {g.ipl.map(m => <MatchCard key={m.id} match={m} />)}
+          </>}
+          {g.international.length > 0 && <>
+            <SectionHeader icon="🌍" title="International" count={g.international.length} />
+            {g.international.map(m => <MatchCard key={m.id} match={m} />)}
+          </>}
+          {g.domestic.length > 0 && <>
+            <SectionHeader icon="🏏" title="Domestic" count={g.domestic.length} />
+            {g.domestic.map(m => <MatchCard key={m.id} match={m} />)}
+          </>}
         </>
       );
     }
+
+    if (activeTab === 'f1') return (
+      <>
+        <View style={styles.f1Header}>
+          <Text style={styles.f1HeaderText}>{new Date().getFullYear()} F1 Race Calendar</Text>
+          <Text style={styles.f1HeaderSub}>Powered by OpenF1</Text>
+        </View>
+        {matches.map(m => <MatchCard key={m.id} match={m} />)}
+      </>
+    );
+
     return matches.map(m => <MatchCard key={m.id} match={m} />);
   };
 
   return (
     <View style={styles.container}>
-      {/* Sport tabs */}
       <FlatList
         data={SPORTS}
         horizontal
@@ -97,56 +101,28 @@ export default function ScoresScreen() {
         )}
       />
 
-      <FlatList
-        data={[{ key: 'body' }]}
-        keyExtractor={i => i.key}
-        renderItem={null}
-        ListHeaderComponent={
-          <View style={styles.content}>
-            <SectionHeading title="Scores" />
-            {renderMatchContent()}
-          </View>
-        }
-      />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <SectionHeading title="Scores" />
+        {renderMatches()}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.primary,
-  },
-  tabBar: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    flexGrow: 0,
-  },
-  tabBarContent: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    gap: SPACING.xs,
-  },
-  tab: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.full,
-    marginRight: SPACING.xs,
-  },
-  tabActive: {
-    backgroundColor: COLORS.accent,
-  },
-  tabText: {
-    color: COLORS.textMuted,
-    fontSize: FONT_SIZE.sm,
-    fontWeight: FONT_WEIGHT.bold,
-  },
-  tabTextActive: {
-    color: COLORS.text,
-  },
-  content: {
-    padding: SPACING.md,
-  },
+  container:     { flex: 1, backgroundColor: COLORS.primary },
+  tabBar:        { flexGrow: 0, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  tabBarContent: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
+  tab:           { paddingHorizontal: SPACING.sm + 2, paddingVertical: 6, borderRadius: BORDER_RADIUS.full, marginRight: 6 },
+  tabActive:     { backgroundColor: COLORS.accent },
+  tabText:       { color: COLORS.textMuted, fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.bold },
+  tabTextActive: { color: COLORS.text },
+  scroll:        { flex: 1 },
+  scrollContent: { padding: SPACING.md, paddingBottom: SPACING.xl * 2 },
   empty: {
     backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.xl,
@@ -154,16 +130,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
-    marginBottom: SPACING.md,
   },
-  emptyIcon: {
-    fontSize: 40,
-    marginBottom: SPACING.sm,
-  },
-  emptyText: {
-    color: COLORS.textMuted,
-    fontSize: FONT_SIZE.md,
-    fontWeight: FONT_WEIGHT.medium,
-    textAlign: 'center',
-  },
+  emptyIcon:    { fontSize: 36, marginBottom: SPACING.sm },
+  emptyText:    { color: COLORS.textMuted, fontSize: FONT_SIZE.sm, fontWeight: FONT_WEIGHT.medium, textAlign: 'center' },
+  f1Header:     { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm, flexWrap: 'wrap' },
+  f1HeaderText: { color: COLORS.text, fontSize: FONT_SIZE.md, fontWeight: FONT_WEIGHT.bold },
+  f1HeaderSub:  { color: COLORS.textMuted, fontSize: FONT_SIZE.xs },
 });

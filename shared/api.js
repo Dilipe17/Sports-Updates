@@ -10,7 +10,7 @@ export const SPORT_CONFIG = {
   soccer:     { url: 'https://site.api.espn.com/apis/personalized/v2/scoreboard/header?sport=soccer&region=in',  type: 'soccer-header', name: 'Soccer',     icon: '⚽', region: 'eu' },
   tennis:     { url: 'https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard',                      type: 'espn',          name: 'Tennis',     icon: '🎾', region: 'eu' },
   nfl:        { url: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',                    type: 'espn',          name: 'NFL',        icon: '🏈', region: 'na' },
-  f1:         { url: 'https://api.openf1.org/v1/sessions?year=2025&session_type=Race',                           type: 'openf1',        name: 'F1',         icon: '🏎️', region: 'eu' },
+  f1:         { url: `https://api.openf1.org/v1/sessions?year=${new Date().getFullYear()}&session_type=Race`,   type: 'openf1',        name: 'F1',         icon: '🏎️', region: 'eu' },
   baseball:   { url: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard',                   type: 'espn',          name: 'Baseball',   icon: '⚾', region: 'na' },
   basketball: { url: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',                 type: 'espn',          name: 'Basketball', icon: '🏀', region: 'na' },
 };
@@ -94,11 +94,20 @@ export function parseSportHeader(data, sport = 'cricket') {
     const leagueName   = league.shortName || league.abbreviation || league.name || '';
     const leagueSlug   = (league.slug || '').toLowerCase();
     const leagueId     = (league.id || '').toString();
+    const leagueNameLower = (league.name || '').toLowerCase();
     let leaguePriority = 99;
     if (sport === 'soccer') {
       const idx = SOCCER_LEAGUE_ORDER.findIndex(k => leagueSlug.includes(k) || leagueId.includes(k));
       if (idx !== -1) leaguePriority = idx + 1;
     }
+    // For cricket, detect major ICC events early so per-event priority can be assigned below
+    const isCricketWorldCup = sport === 'cricket' && (
+      leagueNameLower.includes('world cup') ||
+      leagueNameLower.includes('champions trophy') ||
+      leagueNameLower.includes('world test championship') ||
+      leagueNameLower.includes('wc ') ||
+      (leagueNameLower.includes('icc') && leagueNameLower.includes('final'))
+    );
     for (const ev of (league.events || [])) {
       const competitors = ev.competitors || [];
       if (competitors.length < 2) continue;
@@ -137,10 +146,19 @@ export function parseSportHeader(data, sport = 'cricket') {
       let leagueGroup = 'other';
       if (sport === 'cricket') {
         const lnLower = (league.name || '').toLowerCase();
-        if (lnLower.includes('indian premier') || lnLower.includes('ipl') || leagueName.toLowerCase().includes('ipl'))
+        if (lnLower.includes('indian premier') || lnLower.includes('ipl') || leagueName.toLowerCase().includes('ipl')) {
           leagueGroup = 'ipl';
-        else if (isInternational) leagueGroup = 'international';
-        else                      leagueGroup = 'domestic';
+          leaguePriority = 2;
+        } else if (isCricketWorldCup) {
+          leagueGroup = 'worldcup';
+          leaguePriority = 1;
+        } else if (isInternational) {
+          leagueGroup = 'international';
+          leaguePriority = 5;
+        } else {
+          leagueGroup = 'domestic';
+          leaguePriority = 10;
+        }
       }
       matches.push({
         id: ev.id || ev.competitionId,

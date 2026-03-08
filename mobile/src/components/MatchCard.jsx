@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import {
   COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS, SHADOW,
 } from '../../../shared/theme.js';
+import { fetchF1LivePositions } from '../../../shared/api.js';
 
 function TeamLogo({ logo, name }) {
   const [failed, setFailed] = useState(false);
@@ -23,6 +24,20 @@ function TeamLogo({ logo, name }) {
 }
 
 function F1Card({ match }) {
+  const [positions, setPositions] = useState(null);
+
+  useEffect(() => {
+    if (!match.isLive) return;
+    let cancelled = false;
+    const load = async () => {
+      const data = await fetchF1LivePositions();
+      if (!cancelled) setPositions(data);
+    };
+    load();
+    const timer = setInterval(load, 10000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [match.isLive, match.id]);
+
   const badgeColor = match.isLive ? COLORS.success : match.isComplete ? '#4b5563' : COLORS.accent;
   return (
     <View style={[s.card, match.isLive && s.cardLive]}>
@@ -40,6 +55,21 @@ function F1Card({ match }) {
           <Text style={s.f1Time}>{match.score2}</Text>
         </View>
       </View>
+
+      {/* Live leaderboard */}
+      {match.isLive && positions && positions.length > 0 && (
+        <View style={s.leaderboard}>
+          <Text style={s.leaderboardTitle}>🏁 Live Positions</Text>
+          {positions.slice(0, 10).map(d => (
+            <View key={d.driverNumber} style={s.leaderboardRow}>
+              <Text style={s.leaderboardPos}>{d.position}</Text>
+              <View style={[s.teamDot, { backgroundColor: d.teamColor }]} />
+              <Text style={s.leaderboardName}>{d.name}</Text>
+              <Text style={s.leaderboardTeam} numberOfLines={1}>{d.team}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -326,6 +356,50 @@ const s = StyleSheet.create({
   f1Time: {
     color: COLORS.textMuted,
     fontSize: FONT_SIZE.sm,
+  },
+  // F1 live leaderboard
+  leaderboard: {
+    marginTop: SPACING.sm,
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  leaderboardTitle: {
+    color: '#34d399',
+    fontSize: FONT_SIZE.xs,
+    fontWeight: FONT_WEIGHT.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 4,
+  },
+  leaderboardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 2,
+  },
+  leaderboardPos: {
+    width: 18,
+    color: '#93c5fd',
+    fontSize: FONT_SIZE.xs,
+    fontWeight: FONT_WEIGHT.bold,
+    textAlign: 'right',
+  },
+  teamDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  leaderboardName: {
+    color: COLORS.text,
+    fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.bold,
+    minWidth: 36,
+  },
+  leaderboardTeam: {
+    color: COLORS.textMuted,
+    fontSize: FONT_SIZE.xs,
+    flex: 1,
   },
 });
 
