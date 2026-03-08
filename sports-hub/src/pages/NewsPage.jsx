@@ -4,6 +4,7 @@ import { fetchESPNHeadlines } from '../../../shared/api.js';
 import SectionHeading from '../components/SectionHeading';
 import SportCategoryBar from '../components/SportCategoryBar';
 import NewsCard from '../components/NewsCard';
+import BackButton from '../components/BackButton';
 
 // Sports that have ESPN news endpoints
 const NEWS_SPORTS = ['cricket', 'soccer', 'nfl', 'basketball', 'baseball', 'tennis', 'f1'];
@@ -56,6 +57,7 @@ export default function NewsPage() {
 
   return (
     <div>
+      <BackButton />
       <SectionHeading title="News" />
       <SportCategoryBar selected={selectedSport} onSelect={setSelectedSport} />
       <div style={{ height: SPACING.lg }} />

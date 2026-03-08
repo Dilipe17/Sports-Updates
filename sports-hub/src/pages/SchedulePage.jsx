@@ -5,6 +5,7 @@ import {
 import { fetchSportMatches, SPORT_CONFIG } from '../../../shared/api.js';
 import SectionHeading from '../components/SectionHeading';
 import SportCategoryBar from '../components/SportCategoryBar';
+import BackButton from '../components/BackButton';
 
 const ALL_SPORTS = Object.keys(SPORT_CONFIG);
 
@@ -38,6 +39,7 @@ export default function SchedulePage() {
 
   return (
     <div>
+      <BackButton />
       <SectionHeading title="Upcoming Schedule" />
       <SportCategoryBar selected={selectedSport} onSelect={setSelectedSport} />
       <div style={{ height: SPACING.lg }} />

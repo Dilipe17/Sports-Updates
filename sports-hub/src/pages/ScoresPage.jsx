@@ -4,6 +4,7 @@ import { fetchSportMatches, SPORT_CONFIG } from '../../../shared/api.js';
 import SectionHeading from '../components/SectionHeading';
 import SportCategoryBar from '../components/SportCategoryBar';
 import MatchCard from '../components/MatchCard';
+import BackButton from '../components/BackButton';
 
 const ALL_SPORTS = Object.keys(SPORT_CONFIG); // cricket, soccer, tennis, nfl, f1, baseball, basketball
 
@@ -37,6 +38,7 @@ export default function ScoresPage() {
 
   return (
     <div>
+      <BackButton />
       <SectionHeading title="Live Scores" />
       <SportCategoryBar selected={selectedSport} onSelect={setSelectedSport} />
       <div style={{ height: SPACING.lg }} />
