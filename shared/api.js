@@ -229,7 +229,7 @@ export function parseOpenF1Data(data) {
       score2: raceStart.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       logo2: cc ? `https://flagcdn.com/48x36/${cc}.png` : '',
       status, isLive, isComplete: isPast,
-      league: 'Formula 1 \u2013 2025',
+      league: `Formula 1 \u2013 ${new Date().getFullYear()}`,
       formattedDate: '', gameClock: '', summary: '', potm: '', venue: '',
       leagueGroup: 'other', leaguePriority: 99,
       isInternational: false, intlClassId: 0, isF1: true,
