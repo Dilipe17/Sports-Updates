@@ -10,7 +10,7 @@ export const SPORT_CONFIG = {
   soccer:     { url: 'https://site.api.espn.com/apis/personalized/v2/scoreboard/header?sport=soccer&region=in',  type: 'soccer-header', name: 'Soccer',     icon: '⚽', region: 'eu' },
   tennis:     { url: 'https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard',                      type: 'espn',          name: 'Tennis',     icon: '🎾', region: 'eu' },
   nfl:        { url: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',                    type: 'espn',          name: 'NFL',        icon: '🏈', region: 'na' },
-  f1:         { url: 'https://api.openf1.org/v1/sessions?year=2025&session_type=Race',                           type: 'openf1',        name: 'F1',         icon: '🏎️', region: 'eu' },
+  f1:         { url: `https://api.openf1.org/v1/sessions?year=${new Date().getFullYear()}&session_type=Race`,   type: 'openf1',        name: 'F1',         icon: '🏎️', region: 'eu' },
   baseball:   { url: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard',                   type: 'espn',          name: 'Baseball',   icon: '⚾', region: 'na' },
   basketball: { url: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',                 type: 'espn',          name: 'Basketball', icon: '🏀', region: 'na' },
 };
@@ -94,11 +94,20 @@ export function parseSportHeader(data, sport = 'cricket') {
     const leagueName   = league.shortName || league.abbreviation || league.name || '';
     const leagueSlug   = (league.slug || '').toLowerCase();
     const leagueId     = (league.id || '').toString();
+    const leagueNameLower = (league.name || '').toLowerCase();
     let leaguePriority = 99;
     if (sport === 'soccer') {
       const idx = SOCCER_LEAGUE_ORDER.findIndex(k => leagueSlug.includes(k) || leagueId.includes(k));
       if (idx !== -1) leaguePriority = idx + 1;
     }
+    // For cricket, detect major ICC events early so per-event priority can be assigned below
+    const isCricketWorldCup = sport === 'cricket' && (
+      leagueNameLower.includes('world cup') ||
+      leagueNameLower.includes('champions trophy') ||
+      leagueNameLower.includes('world test championship') ||
+      leagueNameLower.includes('wc ') ||
+      (leagueNameLower.includes('icc') && leagueNameLower.includes('final'))
+    );
     for (const ev of (league.events || [])) {
       const competitors = ev.competitors || [];
       if (competitors.length < 2) continue;
@@ -137,10 +146,19 @@ export function parseSportHeader(data, sport = 'cricket') {
       let leagueGroup = 'other';
       if (sport === 'cricket') {
         const lnLower = (league.name || '').toLowerCase();
-        if (lnLower.includes('indian premier') || lnLower.includes('ipl') || leagueName.toLowerCase().includes('ipl'))
+        if (lnLower.includes('indian premier') || lnLower.includes('ipl') || leagueName.toLowerCase().includes('ipl')) {
           leagueGroup = 'ipl';
-        else if (isInternational) leagueGroup = 'international';
-        else                      leagueGroup = 'domestic';
+          leaguePriority = 2;
+        } else if (isCricketWorldCup) {
+          leagueGroup = 'worldcup';
+          leaguePriority = 1;
+        } else if (isInternational) {
+          leagueGroup = 'international';
+          leaguePriority = 5;
+        } else {
+          leagueGroup = 'domestic';
+          leaguePriority = 10;
+        }
       }
       matches.push({
         id: ev.id || ev.competitionId,
@@ -180,28 +198,38 @@ export function parseOpenF1Data(data) {
   const sorted = data
     .filter(s => s.session_name === 'Race')
     .sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
-  const nextIdx    = sorted.findIndex(s => new Date(s.date_start) > now);
+  // Consider a session "past" only when its end time has passed (default +2h if no date_end)
+  const sessionEnd = s => s.date_end
+    ? new Date(s.date_end)
+    : new Date(new Date(s.date_start).getTime() + 2 * 60 * 60 * 1000);
+  const nextIdx    = sorted.findIndex(s => sessionEnd(s) > now);
   const recentPast = nextIdx > 0 ? sorted.slice(Math.max(0, nextIdx - 2), nextIdx) : [];
   const upcoming   = nextIdx >= 0 ? sorted.slice(nextIdx, nextIdx + 3) : sorted.slice(-3);
   return [...recentPast, ...upcoming].map(session => {
-    const raceDate  = new Date(session.date_start);
-    const isPast    = raceDate < now;
-    const isToday   = raceDate.toDateString() === now.toDateString();
-    const daysUntil = Math.ceil((raceDate - now) / (1000 * 60 * 60 * 24));
-    const status = isToday ? 'TODAY' : isPast ? 'Completed' : daysUntil === 1 ? 'Tomorrow' : `In ${daysUntil} days`;
+    const raceStart = new Date(session.date_start);
+    const raceEnd   = sessionEnd(session);
+    const isLive    = raceStart <= now && now <= raceEnd;
+    const isPast    = raceEnd < now;
+    const daysUntil = Math.ceil((raceStart - now) / (1000 * 60 * 60 * 24));
+    const isToday   = raceStart.toDateString() === now.toDateString();
+    const status    = isLive ? 'LIVE'
+      : isPast    ? 'Completed'
+      : isToday   ? 'TODAY'
+      : daysUntil === 1 ? 'Tomorrow'
+      : `In ${daysUntil} days`;
     const cc = (session.country_code || '').toLowerCase().slice(0, 2);
     return {
       id: session.session_key,
       team1: session.circuit_short_name || 'TBD',
       team1Full: `${session.circuit_short_name} Grand Prix`,
-      score1: raceDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      score1: raceStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       logo1: '',
       team2: session.country_name || '',
       team2Full: `${session.location}, ${session.country_name}`,
-      score2: raceDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      score2: raceStart.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       logo2: cc ? `https://flagcdn.com/48x36/${cc}.png` : '',
-      status, isLive: isToday, isComplete: isPast,
-      league: 'Formula 1 \u2013 2025',
+      status, isLive, isComplete: isPast,
+      league: `Formula 1 \u2013 ${new Date().getFullYear()}`,
       formattedDate: '', gameClock: '', summary: '', potm: '', venue: '',
       leagueGroup: 'other', leaguePriority: 99,
       isInternational: false, intlClassId: 0, isF1: true,
@@ -246,6 +274,51 @@ export async function fetchSportMatches(sportId, forceRefresh = false) {
 }
 
 export function getAllCachedMatches() { return _matchCache; }
+
+// ─── F1 Live Positions (OpenF1 /v1/position + /v1/drivers) ───────────────────
+
+const _f1PosCache = { data: null, ts: 0 };
+
+export async function fetchF1LivePositions() {
+  if (_f1PosCache.data && (Date.now() - _f1PosCache.ts) < 10000) return _f1PosCache.data;
+  try {
+    const [posRes, drvRes] = await Promise.all([
+      fetch('https://api.openf1.org/v1/position?session_key=latest'),
+      fetch('https://api.openf1.org/v1/drivers?session_key=latest'),
+    ]);
+    if (!posRes.ok || !drvRes.ok) return _f1PosCache.data;
+    const [positions, drivers] = await Promise.all([posRes.json(), drvRes.json()]);
+
+    // Build driver info map
+    const driverMap = {};
+    for (const d of drivers) driverMap[d.driver_number] = d;
+
+    // Keep only the latest position record per driver
+    const latestPos = {};
+    for (const p of positions) {
+      const existing = latestPos[p.driver_number];
+      if (!existing || new Date(p.date) > new Date(existing.date)) latestPos[p.driver_number] = p;
+    }
+
+    const leaderboard = Object.values(latestPos)
+      .sort((a, b) => a.position - b.position)
+      .map(p => ({
+        position:     p.position,
+        driverNumber: p.driver_number,
+        name:         driverMap[p.driver_number]?.name_acronym || `#${p.driver_number}`,
+        fullName:     driverMap[p.driver_number]?.full_name    || '',
+        team:         driverMap[p.driver_number]?.team_name    || '',
+        teamColor:    '#' + (driverMap[p.driver_number]?.team_colour || '444444'),
+      }));
+
+    const result = leaderboard.length ? leaderboard : null;
+    _f1PosCache.data = result;
+    _f1PosCache.ts   = Date.now();
+    return result;
+  } catch {
+    return _f1PosCache.data;
+  }
+}
 
 export async function fetchAllSportsMatches() {
   await Promise.allSettled(Object.keys(SPORT_CONFIG).map(id => fetchSportMatches(id)));
