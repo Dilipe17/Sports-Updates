@@ -40,7 +40,14 @@ const GLOBAL_CSS = `
   img, svg { max-width: 100%; }
   @media (max-width: 480px) {
     /* Tighten main padding on small phones */
-    main { padding-left: 12px !important; padding-right: 12px !important; }
+    main { padding-left: 10px !important; padding-right: 10px !important; }
+    /* MatchCard mobile overrides */
+    .mc-card  { padding: 10px 10px !important; }
+    .mc-body  { gap: 4px !important; }
+    .mc-team  { width: 58px !important; }
+    .mc-tname { font-size: 10px !important; max-width: 58px !important; }
+    .mc-league { max-width: 120px !important; font-size: 9px !important; }
+    .mc-date   { font-size: 9px !important; }
   }
 `;
 
