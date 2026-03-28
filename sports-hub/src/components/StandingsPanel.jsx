@@ -38,9 +38,15 @@ export default function StandingsPanel({ sportId }) {
 
   return (
     <div style={s.wrap}>
-      <button style={s.toggleBtn} onClick={toggle}>
-        <span>📊</span>
-        <span>Standings</span>
+      <button
+        style={{
+          ...s.toggleBtn,
+          ...(sportId === 'cricket' ? s.iplToggleBtn : {}),
+        }}
+        onClick={toggle}
+      >
+        <span>{sportId === 'cricket' ? '🏏' : '📊'}</span>
+        <span>{sportId === 'cricket' ? 'IPL Points Table' : 'Standings'}</span>
         <span style={{ ...s.chevron, transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
       </button>
 
@@ -86,14 +92,14 @@ function StandingsTable({ sportId, data }) {
     );
   }
 
-  // ── Cricket (groups) ────────────────────────────────────────────────────────
+  // ── Cricket / IPL (groups) ──────────────────────────────────────────────────
   if (isCricket && children.length > 0) {
     return children.map(child => {
       const entries = sortEntries(child.standings?.entries || []);
       if (!entries.length) return null;
       return (
         <div key={child.name} style={s.groupWrap}>
-          <div style={s.groupTitle}>🏏 {child.name}</div>
+          <div style={{ ...s.groupTitle, color: '#fb923c' }}>🏏 {child.name}</div>
           <table style={s.table}>
             <thead><tr style={s.thead}>
               {['#','Team','MP','W','L','NRR','Pts'].map(h => <th key={h} style={h==='Team'?s.thLeft:s.th}>{h}</th>)}
@@ -255,6 +261,11 @@ const sortEntries = (entries) => [...entries].sort((a,b) => {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const s = {
   wrap:      { marginBottom: 16 },
+  iplToggleBtn: {
+    background: 'rgba(251,146,60,.15)',
+    border: '1px solid rgba(251,146,60,.4)',
+    color: '#fb923c',
+  },
   toggleBtn: {
     display: 'flex', alignItems: 'center', gap: 8,
     padding: '8px 16px',

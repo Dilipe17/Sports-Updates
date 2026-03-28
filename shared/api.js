@@ -24,7 +24,10 @@ export const STANDINGS_CONFIG = {
     { id: 'fra.1',          name: 'Ligue 1' },
     { id: 'uefa.champions', name: 'Champions League' },
   ],
-  cricket:    [{ id: '8604', sport: 'cricket',    name: 'T20 World Cup' }],
+  cricket:    [
+    { id: '8048', sport: 'cricket', name: 'IPL Points Table' },
+    { id: '8604', sport: 'cricket', name: 'T20 World Cup' },
+  ],
   nfl:        [{ id: 'nfl',  sport: 'football',   name: 'NFL' }],
   baseball:   [{ id: 'mlb',  sport: 'baseball',   name: 'MLB' }],
   basketball: [{ id: 'nba',  sport: 'basketball', name: 'NBA' }],
@@ -154,7 +157,7 @@ export function parseSportHeader(data, sport = 'cricket') {
         const evIsWorldCup = isCricketWorldCup || _wcCheck(evNameLower);
         if (lnLower.includes('indian premier') || lnLower.includes('ipl') || leagueName.toLowerCase().includes('ipl')) {
           leagueGroup = 'ipl';
-          leaguePriority = 2;
+          leaguePriority = 0;   // IPL season active — show above everything
         } else if (evIsWorldCup) {
           leagueGroup = 'worldcup';
           // Finals/Semis get sub-priority 0, group stage gets 1
