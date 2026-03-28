@@ -137,13 +137,14 @@ function TeamLogo({ logo, name }) {
 }
 
 /* ── Section header (IPL / International / Domestic) ─────────────────────── */
-export function SectionHeader({ icon, title, count }) {
+export function SectionHeader({ icon, title, count, accent }) {
+  const color = accent || '#60a5fa';
   return (
     <div style={sh.row}>
       <span style={{ fontSize: 16 }}>{icon}</span>
-      <span style={sh.title}>{title}</span>
-      <span style={sh.count}>{count}</span>
-      <div style={sh.line} />
+      <span style={{ ...sh.title, color }}>{title}</span>
+      <span style={{ ...sh.count, background: `${color}22`, color }}>{count}</span>
+      <div style={{ ...sh.line, background: `linear-gradient(90deg, ${color}55, transparent)` }} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import Header          from '../components/Header';
 import FavoritesModal  from '../components/FavoritesModal';
 import StandingsPanel  from '../components/StandingsPanel';
 import MatchCard, { SectionHeader, MatchCardSkeleton } from '../components/MatchCard';
+import IPLBanner       from '../components/IPLBanner';
 import { SPORT_CONFIG, fetchSportMatches, fetchESPNHeadlines } from '../../../shared/api.js';
 
 const SPORTS = Object.entries(SPORT_CONFIG).map(([id, cfg]) => ({ id, ...cfg }));
@@ -87,12 +88,19 @@ export default function HomePage() {
     return () => clearInterval(intervalRef.current);
   }, [activeTab, loadMatches]);
 
-  /* ── fetch news once ────────────────────────────────────────────────────── */
+  /* ── fetch news when tab changes ───────────────────────────────────────── */
   useEffect(() => {
-    fetchESPNHeadlines('nfl', 5)
-      .then(d => setNews(d.articles?.slice(0, 5) || []))
+    const sport = activeTab === 'nfl' ? 'nfl'
+                : activeTab === 'basketball' ? 'basketball'
+                : activeTab === 'baseball'   ? 'baseball'
+                : activeTab === 'soccer'     ? 'soccer'
+                : activeTab === 'tennis'     ? 'tennis'
+                : activeTab === 'f1'         ? 'f1'
+                : 'cricket'; // default to cricket (covers 'cricket' tab)
+    fetchESPNHeadlines(sport, 6)
+      .then(d => setNews(d.articles?.slice(0, 6) || []))
       .catch(() => setNews([]));
-  }, []);
+  }, [activeTab]);
 
   /* ── region filter ──────────────────────────────────────────────────────── */
   const regionBlocked = region !== 'all' && SPORT_CONFIG[activeTab]?.region !== region;
@@ -122,18 +130,20 @@ export default function HomePage() {
     );
 
     if (activeTab === 'cricket') {
-      const groups = { worldcup: [], ipl: [], international: [], domestic: [] };
+      const groups = { ipl: [], worldcup: [], international: [], domestic: [] };
       matches.forEach(m => { (groups[m.leagueGroup] || groups.domestic).push(m); });
       let idx = 0;
       return (
         <>
+          {/* IPL always first — hero banner + matches */}
+          <IPLBanner />
+          {groups.ipl.length > 0 && <>
+            <SectionHeader icon="🏏" title="IPL 2026" count={groups.ipl.length} accent="#fb923c" />
+            {groups.ipl.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
+          </>}
           {groups.worldcup.length > 0 && <>
             <SectionHeader icon="🏆" title="Major Events" count={groups.worldcup.length} />
             {groups.worldcup.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
-          </>}
-          {groups.ipl.length > 0 && <>
-            <SectionHeader icon="🔵" title="IPL T20" count={groups.ipl.length} />
-            {groups.ipl.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
           </>}
           {groups.international.length > 0 && <>
             <SectionHeader icon="🌍" title="International" count={groups.international.length} />
@@ -232,7 +242,9 @@ export default function HomePage() {
 
               {/* News */}
               <div style={card}>
-                <h3 style={cardTitle}>Latest Headlines</h3>
+                <h3 style={cardTitle}>
+                  {activeTab === 'cricket' ? '🏏 IPL & Cricket Headlines' : 'Latest Headlines'}
+                </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {news.length > 0 ? news.map((a, i) => (
                     <div key={i} style={{ cursor: 'pointer' }}
