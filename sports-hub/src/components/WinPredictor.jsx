@@ -68,7 +68,8 @@ function savePolls(matchId, data) {
 export default function WinPredictor({ iplMatches = [], initialTeam }) {
   const [team1,       setTeam1]       = useState(null);
   const [team2,       setTeam2]       = useState(null);
-  const [matchInfo,   setMatchInfo]   = useState(null); // { id, label, date, isLive, status }
+  const [matchInfo,   setMatchInfo]   = useState(null);
+  const [rawMatch,    setRawMatch]    = useState(null); // full match object for scorecard
   const [autoMode,    setAutoMode]    = useState(false);
   const [result,      setResult]      = useState(null);
   const [animating,   setAnimating]   = useState(false);
@@ -88,6 +89,7 @@ export default function WinPredictor({ iplMatches = [], initialTeam }) {
         setTeam1(t1);
         setTeam2(t2);
         setAutoMode(true);
+        setRawMatch(featured);
         setMatchInfo({
           id: featured.id,
           label: `${t1.abbr} vs ${t2.abbr}`,
@@ -102,6 +104,7 @@ export default function WinPredictor({ iplMatches = [], initialTeam }) {
       }
     }
 
+    setRawMatch(null);
     // Fallback: banner team click
     if (initialTeam?.abbr) {
       const found = IPL_TEAMS.find(t => t.abbr === initialTeam.abbr);
@@ -130,10 +133,14 @@ export default function WinPredictor({ iplMatches = [], initialTeam }) {
 
   return (
     <div style={s.wrap} className="fade-in">
-      {/* Header */}
+
+      {/* ── LIVE SCORECARD — always at the very top ── */}
+      {rawMatch && <LiveScoreCard match={rawMatch} team1={team1} team2={team2} />}
+
+      {/* ── Predictor header ── */}
       <div style={s.header}>
         <span style={s.badge}>🎯 Win Predictor</span>
-        {matchInfo ? (
+        {!rawMatch && (matchInfo ? (
           <>
             <div style={s.title}>{matchInfo.fullLabel || matchInfo.label}</div>
             <div style={{ ...s.subtitle, color: matchInfo.isLive ? '#4ade80' : '#94a3b8' }}>
@@ -145,6 +152,9 @@ export default function WinPredictor({ iplMatches = [], initialTeam }) {
             <div style={s.title}>Who will win?</div>
             <div style={s.subtitle}>Select two IPL teams for a prediction</div>
           </>
+        ))}
+        {rawMatch && (
+          <div style={s.subtitle}>Fantasy predictions &amp; community polls</div>
         )}
       </div>
 
@@ -422,6 +432,145 @@ function PollCard({ title, options, voted, onVote, accent }) {
     </div>
   );
 }
+
+/* ── Live Scorecard ──────────────────────────────────────────────────────── */
+function LiveScoreCard({ match, team1, team2 }) {
+  const { isLive, isComplete, score1, score2, status, summary, venue, gameClock, formattedDate, potm, league } = match;
+
+  const statusColor = isLive ? '#4ade80' : isComplete ? '#94a3b8' : '#fbbf24';
+  const statusLabel = isLive ? '🔴 LIVE' : isComplete ? '✅ FINAL' : '🕐 UPCOMING';
+
+  return (
+    <div style={sc.card}>
+      {/* League + status bar */}
+      <div style={sc.topBar}>
+        <span style={sc.leagueTag}>{(league || 'IPL 2026').split('•')[0].trim()}</span>
+        <span style={{ ...sc.statusTag, color: statusColor, borderColor: statusColor + '55' }}>
+          {statusLabel}
+        </span>
+      </div>
+
+      {/* Teams + Scores */}
+      <div style={sc.teamsRow}>
+        {/* Team 1 */}
+        <div style={sc.teamBlock}>
+          {(match.logo1 || team1?.espnId) && (
+            <img
+              src={match.logo1 || `https://a.espncdn.com/i/teamlogos/cricket/500/${team1?.espnId}.png`}
+              alt="" style={sc.teamLogo}
+              onError={e => { e.target.style.display = 'none'; }}
+            />
+          )}
+          <div style={sc.teamName}>{match.team1Full || match.team1}</div>
+          <div style={{ ...sc.score, color: team1?.color || '#fff' }}>
+            {score1 && score1 !== '-' ? score1 : (isLive || isComplete ? '—' : 'Batting 1st')}
+          </div>
+        </div>
+
+        {/* VS divider */}
+        <div style={sc.vsDivider}>
+          <div style={sc.vsText}>VS</div>
+          {(isLive || isComplete) && gameClock && (
+            <div style={sc.clock}>{gameClock}</div>
+          )}
+          {!isLive && !isComplete && formattedDate && (
+            <div style={sc.clock}>{formattedDate}</div>
+          )}
+        </div>
+
+        {/* Team 2 */}
+        <div style={{ ...sc.teamBlock, alignItems: 'flex-end' }}>
+          {(match.logo2 || team2?.espnId) && (
+            <img
+              src={match.logo2 || `https://a.espncdn.com/i/teamlogos/cricket/500/${team2?.espnId}.png`}
+              alt="" style={sc.teamLogo}
+              onError={e => { e.target.style.display = 'none'; }}
+            />
+          )}
+          <div style={sc.teamName}>{match.team2Full || match.team2}</div>
+          <div style={{ ...sc.score, color: team2?.color || '#fff' }}>
+            {score2 && score2 !== '-' ? score2 : (isLive || isComplete ? '—' : 'Batting 2nd')}
+          </div>
+        </div>
+      </div>
+
+      {/* Status / result summary */}
+      {(status || summary) && (
+        <div style={sc.statusBar}>
+          {summary || status}
+        </div>
+      )}
+
+      {/* POTM */}
+      {potm && isComplete && (
+        <div style={sc.potm}>🏅 Player of the Match: <strong style={{ color: '#fbbf24' }}>{potm}</strong></div>
+      )}
+
+      {/* Venue */}
+      {venue && (
+        <div style={sc.venue}>📍 {venue}</div>
+      )}
+    </div>
+  );
+}
+
+const sc = {
+  card: {
+    background: 'linear-gradient(135deg, rgba(10,25,50,.95) 0%, rgba(15,35,70,.95) 100%)',
+    border: '1px solid rgba(99,155,255,.25)',
+    borderRadius: 16,
+    padding: '14px 16px',
+    marginBottom: 14,
+  },
+  topBar: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 12,
+  },
+  leagueTag: {
+    fontSize: 10, fontWeight: 700, color: '#60a5fa',
+    textTransform: 'uppercase', letterSpacing: '.06em',
+  },
+  statusTag: {
+    fontSize: 10, fontWeight: 800,
+    border: '1px solid', borderRadius: 6,
+    padding: '2px 8px', letterSpacing: '.05em',
+  },
+  teamsRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    gap: 8, marginBottom: 10,
+  },
+  teamBlock: {
+    display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+    gap: 4, flex: 1, minWidth: 0,
+  },
+  teamLogo: { width: 40, height: 40, objectFit: 'contain' },
+  teamName: {
+    fontSize: 12, fontWeight: 700, color: '#e2e8f0',
+    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
+  },
+  score: {
+    fontSize: 22, fontWeight: 900, lineHeight: 1,
+    letterSpacing: '-.5px',
+  },
+  vsDivider: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    gap: 4, flexShrink: 0, paddingBottom: 4,
+  },
+  vsText: { fontSize: 11, fontWeight: 900, color: '#475569' },
+  clock:  { fontSize: 10, color: '#94a3b8', textAlign: 'center', maxWidth: 70 },
+  statusBar: {
+    fontSize: 12, color: '#cbd5e1', fontWeight: 500,
+    background: 'rgba(30,64,175,.25)', borderRadius: 8,
+    padding: '6px 10px', textAlign: 'center',
+    borderLeft: '3px solid rgba(99,155,255,.4)',
+  },
+  potm: {
+    fontSize: 11, color: '#94a3b8', marginTop: 8, textAlign: 'center',
+  },
+  venue: {
+    fontSize: 10, color: '#64748b', marginTop: 6, textAlign: 'center',
+  },
+};
 
 /* ── Styles ──────────────────────────────────────────────────────────────── */
 const s = {
