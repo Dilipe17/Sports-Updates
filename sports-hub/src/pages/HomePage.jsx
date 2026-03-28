@@ -4,6 +4,7 @@ import FavoritesModal  from '../components/FavoritesModal';
 import StandingsPanel  from '../components/StandingsPanel';
 import MatchCard, { SectionHeader, MatchCardSkeleton } from '../components/MatchCard';
 import IPLBanner       from '../components/IPLBanner';
+import WinPredictor    from '../components/WinPredictor';
 import { SPORT_CONFIG, fetchSportMatches, fetchESPNHeadlines } from '../../../shared/api.js';
 
 const SPORTS = Object.entries(SPORT_CONFIG).map(([id, cfg]) => ({ id, ...cfg }));
@@ -65,6 +66,7 @@ export default function HomePage() {
   const [favOpen,       setFavOpen]       = useState(false);
   const [sidebarOpen,   setSidebarOpen]   = useState(false);
   const [isMobile,      setIsMobile]      = useState(() => window.innerWidth <= 900);
+  const [predictTeam,   setPredictTeam]   = useState(null); // team selected from IPL banner
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -135,8 +137,11 @@ export default function HomePage() {
       let idx = 0;
       return (
         <>
-          {/* IPL always first — hero banner + matches */}
-          <IPLBanner />
+          {/* IPL always first — hero banner + win predictor + matches */}
+          <IPLBanner onTeamClick={t => { setPredictTeam(t); document.getElementById('ipl-predictor')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }} />
+          <div id="ipl-predictor">
+            <WinPredictor initialTeam={predictTeam} />
+          </div>
           {groups.ipl.length > 0 && <>
             <SectionHeader icon="🏏" title="IPL 2026" count={groups.ipl.length} accent="#fb923c" />
             {groups.ipl.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
