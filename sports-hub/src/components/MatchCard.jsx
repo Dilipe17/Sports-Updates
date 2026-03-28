@@ -1,6 +1,19 @@
 import React from 'react';
 import { fetchF1LivePositions } from '../../../shared/api.js';
 
+/* Shorten long ESPN status strings for the badge (mobile-safe) */
+function shortStatus(status, isLive, isComplete) {
+  if (isLive)     return 'LIVE';
+  if (isComplete) return 'FINAL';
+  if (!status)    return 'UPCOMING';
+  // Extract a time if present: "Starts At 19:30 Local Time" → "19:30"
+  const t = status.match(/\b(\d{1,2}:\d{2})\b/);
+  if (t) return `STARTS ${t[1]}`;
+  if (status.toUpperCase() === 'UPCOMING') return 'UPCOMING';
+  // Keep short statuses as-is; truncate anything long
+  return status.length <= 18 ? status.toUpperCase() : 'UPCOMING';
+}
+
 /* ── F1 race card ─────────────────────────────────────────────────────────── */
 function F1Card({ match, delay }) {
   const [positions, setPositions] = React.useState(null);
@@ -48,7 +61,7 @@ function F1Card({ match, delay }) {
               <span style={s.pos}>{d.position}</span>
               <span style={{ ...s.teamDot, background: d.teamColor }} />
               <span style={s.driverName}>{d.fullName || d.name}</span>
-              <span style={s.teamName}>{d.team}</span>
+              <span style={s.f1TeamName}>{d.team}</span>
             </div>
           ))}
         </div>
@@ -64,47 +77,51 @@ export default function MatchCard({ match, delay = 0 }) {
   const badgeColor  = match.isLive ? '#16a34a' : match.isComplete ? '#4b5563' : '#2563eb';
   const borderColor = match.isLive ? 'rgba(34,197,94,.35)' : 'rgba(30,64,175,.35)';
 
+  const label = shortStatus(match.status, match.isLive, match.isComplete);
+
   return (
-    <div className="fade-in" style={{ ...s.card, borderColor, animationDelay: `${delay}ms` }}>
+    <div className="fade-in mc-card" style={{ ...s.card, borderColor, animationDelay: `${delay}ms` }}>
       {/* Header row */}
       <div style={s.headerRow}>
         <div style={s.headerLeft}>
           {match.isInternational && <span style={s.intlBadge}>INTL</span>}
           {match.leagueGroup === 'ipl' && <span style={s.iplBadge}>IPL</span>}
           {match.league && (
-            <span style={s.leagueText}>
-              {match.league}{match.matchDesc ? ` • ${match.matchDesc}` : ''}
+            <span className="mc-league" style={s.leagueText}>
+              {/* Show only the league name — drop long match descriptors */}
+              {match.league.split('•')[0].trim()}
             </span>
           )}
         </div>
         {match.formattedDate && (
-          <span style={s.dateText}>📅 {match.formattedDate}</span>
+          <span className="mc-date" style={s.dateText}>{match.formattedDate}</span>
         )}
       </div>
 
       {/* Teams + score */}
-      <div style={s.body}>
+      <div className="mc-body" style={s.body}>
         {/* Team 1 */}
-        <div style={s.team}>
+        <div className="mc-team" style={s.team}>
           <TeamLogo logo={match.logo1} name={match.team1} />
-          <div style={s.teamName} title={match.team1Full || match.team1}>{match.team1}</div>
+          <div className="mc-tname" style={s.teamName} title={match.team1Full || match.team1}>
+            {match.team1}
+          </div>
         </div>
 
         {/* Centre */}
         <div style={s.centre}>
           <span style={{ ...s.badge, background: badgeColor }}>
             {match.isLive && <span className="live-dot" style={{ marginRight: 4 }} />}
-            <span>{match.status.toUpperCase()}</span>
+            <span>{label}</span>
           </span>
           <div style={s.score}>
             <span style={s.scoreVal}>{match.score1 || '-'}</span>
             <span style={s.vs}>vs</span>
             <span style={s.scoreVal}>{match.score2 || '-'}</span>
           </div>
-          {match.gameClock && (
-            <div style={s.clock}>
-              🕐 <span>{match.gameClock}</span>
-            </div>
+          {/* Show gameClock only when not already captured in the badge */}
+          {match.gameClock && label !== `STARTS ${match.gameClock}` && (
+            <div style={s.clock}>🕐 <span>{match.gameClock}</span></div>
           )}
           {match.summary && <div style={s.summary}>{match.summary}</div>}
           {match.potm    && <div style={s.potm}>⭐ POTM: {match.potm}</div>}
@@ -112,9 +129,11 @@ export default function MatchCard({ match, delay = 0 }) {
         </div>
 
         {/* Team 2 */}
-        <div style={s.team}>
+        <div className="mc-team" style={s.team}>
           <TeamLogo logo={match.logo2} name={match.team2} />
-          <div style={s.teamName} title={match.team2Full || match.team2}>{match.team2}</div>
+          <div className="mc-tname" style={s.teamName} title={match.team2Full || match.team2}>
+            {match.team2}
+          </div>
         </div>
       </div>
     </div>
@@ -178,7 +197,7 @@ const s = {
     background: 'rgba(30,58,138,0.38)',
     border: '1px solid rgba(30,64,175,.35)',
     borderRadius: 18,
-    padding: '14px 18px',
+    padding: '12px 14px',
     marginBottom: 10,
     transition: 'background .2s',
   },
@@ -198,7 +217,7 @@ const s = {
   leagueText: {
     fontSize: 10, fontWeight: 700, color: '#60a5fa',
     textTransform: 'uppercase', letterSpacing: '.05em',
-    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260,
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150,
   },
   dateText: { fontSize: 10, color: '#93c5fd', flexShrink: 0 },
 
@@ -207,7 +226,7 @@ const s = {
   },
   team: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
-    width: 72, flexShrink: 0,
+    width: 66, flexShrink: 0,
   },
   logo: { width: 44, height: 44, objectFit: 'contain', marginBottom: 6, borderRadius: '50%' },
   logoFallback: {
@@ -218,8 +237,10 @@ const s = {
   },
   teamName: {
     fontSize: 11, fontWeight: 700, color: '#fff',
-    textAlign: 'center', maxWidth: 70,
-    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+    textAlign: 'center', maxWidth: 66,
+    overflow: 'hidden', textOverflow: 'ellipsis',
+    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+    lineHeight: 1.3,
   },
 
   centre: {
@@ -263,7 +284,7 @@ const s = {
   pos:              { width: 20, fontSize: 12, fontWeight: 800, color: '#93c5fd', textAlign: 'right', flexShrink: 0 },
   teamDot:          { width: 8, height: 8, borderRadius: '50%', flexShrink: 0 },
   driverName:       { fontSize: 13, fontWeight: 700, color: '#fff', minWidth: 38 },
-  teamName:         { fontSize: 11, color: '#93c5fd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  f1TeamName:       { fontSize: 11, color: '#93c5fd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
 };
 
 const sh = {
