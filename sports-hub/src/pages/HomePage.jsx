@@ -140,7 +140,7 @@ export default function HomePage() {
           {/* IPL always first — hero banner + win predictor + matches */}
           <IPLBanner onTeamClick={t => { setPredictTeam(t); document.getElementById('ipl-predictor')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }} />
           <div id="ipl-predictor">
-            <WinPredictor initialTeam={predictTeam} />
+            <WinPredictor iplMatches={groups.ipl} initialTeam={predictTeam} />
           </div>
           {groups.ipl.length > 0 && <>
             <SectionHeader icon="🏏" title="IPL 2026" count={groups.ipl.length} accent="#fb923c" />
