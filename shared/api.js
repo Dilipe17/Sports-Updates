@@ -339,6 +339,52 @@ export async function fetchAllSportsMatches() {
 
 const _standingsCache = {};
 
+// Dynamically discovers the current IPL league ID from the ESPN cricket header,
+// then fetches the actual IPL standings — season-agnostic, works every year.
+const _iplStandingsCache = { data: null, ts: 0 };
+export async function fetchIPLStandings() {
+  if (_iplStandingsCache.data && (Date.now() - _iplStandingsCache.ts) < 300000) {
+    return _iplStandingsCache.data;
+  }
+  try {
+    // Step 1 – discover the live IPL league ID from the cricket header
+    const hdr = await fetch('https://site.api.espn.com/apis/personalized/v2/scoreboard/header?sport=cricket&region=in');
+    if (!hdr.ok) return null;
+    const hdrData = await hdr.json();
+    const leagues  = hdrData?.sports?.[0]?.leagues || [];
+    const iplLeague = leagues.find(l => {
+      const n = (l.name || '').toLowerCase();
+      return n.includes('indian premier') || n.includes('ipl') ||
+             (l.abbreviation || '').toLowerCase() === 'ipl';
+    });
+    if (!iplLeague?.id) return null;
+
+    // Step 2 – fetch the actual standings using the discovered ID
+    const res = await fetch(`https://site.api.espn.com/apis/v2/sports/cricket/${iplLeague.id}/standings`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const result = { ...data, _iplLeagueId: iplLeague.id, _iplLeagueName: iplLeague.name };
+    _iplStandingsCache.data = result;
+    _iplStandingsCache.ts   = Date.now();
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+// Fetch all matches for a specific team in a league (for click-through schedule)
+export async function fetchTeamSchedule(leagueId, teamId) {
+  try {
+    const res = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/cricket/${leagueId}/teams/${teamId}/schedule`
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchStandingsData(sportId, leagueIdx = 0) {
   const configs = STANDINGS_CONFIG[sportId];
   if (!configs) return null;
