@@ -13,7 +13,7 @@ const IPL_TEAMS = [
   { abbr: 'LSG',  name: 'Lucknow Super Giants',       color: '#A72056', bg: '#1a0010', espnId: 6602 },
 ];
 
-export default function IPLBanner() {
+export default function IPLBanner({ onTeamClick }) {
   return (
     <div style={s.wrap} className="fade-in">
       {/* Header */}
@@ -30,10 +30,19 @@ export default function IPLBanner() {
         </div>
       </div>
 
+      {onTeamClick && (
+        <div style={s.clickHint}>🎯 Tap a team to predict their match outcome</div>
+      )}
+
       {/* Teams strip */}
       <div style={s.teamsScroll}>
         {IPL_TEAMS.map(team => (
-          <div key={team.abbr} style={s.teamCard}>
+          <div
+            key={team.abbr}
+            style={{ ...s.teamCard, cursor: onTeamClick ? 'pointer' : 'default' }}
+            onClick={() => onTeamClick && onTeamClick(team)}
+            title={onTeamClick ? `Predict ${team.name} match` : team.name}
+          >
             <div style={{ ...s.logoWrap, background: `${team.color}22`, border: `1.5px solid ${team.color}55` }}>
               <img
                 src={`https://a.espncdn.com/i/teamlogos/cricket/500/${team.espnId}.png`}
@@ -128,6 +137,10 @@ const s = {
     scrollbarWidth: 'none',
     WebkitOverflowScrolling: 'touch',
   },
+  clickHint: {
+    fontSize: 11, color: '#a78bfa', textAlign: 'center',
+    marginBottom: 10, fontWeight: 500,
+  },
   teamCard: {
     display: 'flex',
     flexDirection: 'column',
@@ -135,7 +148,7 @@ const s = {
     gap: 5,
     flexShrink: 0,
     width: 68,
-    cursor: 'default',
+    transition: 'transform .15s, opacity .15s',
   },
   logoWrap: {
     width: 52,
