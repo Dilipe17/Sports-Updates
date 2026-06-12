@@ -3,8 +3,9 @@ import Header          from '../components/Header';
 import FavoritesModal  from '../components/FavoritesModal';
 import StandingsPanel  from '../components/StandingsPanel';
 import MatchCard, { SectionHeader, MatchCardSkeleton } from '../components/MatchCard';
-import IPLBanner       from '../components/IPLBanner';
-import WinPredictor    from '../components/WinPredictor';
+import IPLBanner          from '../components/IPLBanner';
+import WinPredictor       from '../components/WinPredictor';
+import FIFAWorldCupHero   from '../components/FIFAWorldCupHero';
 import { SPORT_CONFIG, fetchSportMatches, fetchESPNHeadlines } from '../../../shared/api.js';
 
 const SPORTS = Object.entries(SPORT_CONFIG).map(([id, cfg]) => ({ id, ...cfg }));
@@ -66,13 +67,24 @@ export default function HomePage() {
   const [favOpen,       setFavOpen]       = useState(false);
   const [sidebarOpen,   setSidebarOpen]   = useState(false);
   const [isMobile,      setIsMobile]      = useState(() => window.innerWidth <= 900);
-  const [predictTeam,   setPredictTeam]   = useState(null); // team selected from IPL banner
+  const [predictTeam,   setPredictTeam]   = useState(null);
+  const [wcLiveMatch,   setWcLiveMatch]   = useState(null);
   const intervalRef = useRef(null);
+  const tabsRef     = useRef(null);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth <= 900);
     window.addEventListener('resize', handler, { passive: true });
     return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  /* ── Silently prefetch soccer to populate FIFA WC hero teaser ── */
+  useEffect(() => {
+    fetchSportMatches('soccer').then(soccerMatches => {
+      const wc = soccerMatches.find(m => m.leagueGroup === 'worldcup' && m.isLive)
+              || soccerMatches.find(m => m.leagueGroup === 'worldcup' && !m.isComplete);
+      setWcLiveMatch(wc || null);
+    }).catch(() => {});
   }, []);
 
   /* ── fetch matches ──────────────────────────────────────────────────────── */
@@ -171,6 +183,24 @@ export default function HomePage() {
       );
     }
 
+    if (activeTab === 'soccer') {
+      const groups = { worldcup: [], other: [] };
+      matches.forEach(m => { if (m.leagueGroup === 'worldcup') groups.worldcup.push(m); else groups.other.push(m); });
+      let idx = 0;
+      return (
+        <>
+          {groups.worldcup.length > 0 && <>
+            <SectionHeader icon="🏆" title="FIFA World Cup 2026" count={groups.worldcup.length} accent="#4ade80" />
+            {groups.worldcup.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
+          </>}
+          {groups.other.length > 0 && <>
+            <SectionHeader icon="⚽" title="Club Football" count={groups.other.length} />
+            {groups.other.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
+          </>}
+        </>
+      );
+    }
+
     return matches.map((m, i) => <MatchCard key={m.id} match={m} delay={i * 70} />);
   };
 
@@ -181,6 +211,14 @@ export default function HomePage() {
       <FavoritesModal open={favOpen} onClose={() => setFavOpen(false)} />
 
       <main style={mainStyle}>
+        <FIFAWorldCupHero
+          liveMatch={wcLiveMatch}
+          onViewScores={() => {
+            setActiveTab('soccer');
+            setTimeout(() => tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+          }}
+        />
+
         <div style={{
           display: 'grid',
           gridTemplateColumns: isMobile ? '1fr' : '1fr 260px',
@@ -191,7 +229,7 @@ export default function HomePage() {
           {/* ── Main scores area ───────────────────────────────────────── */}
           <div style={{ minWidth: 0 }}>
             {/* Sport tabs */}
-            <nav className="home-tab-bar" style={tabBar}>
+            <nav ref={tabsRef} className="home-tab-bar" style={tabBar}>
               {SPORTS.map(({ id, icon, name }) => (
                 <button key={id}
                   className="home-tab-btn"

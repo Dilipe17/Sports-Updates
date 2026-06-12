@@ -7,7 +7,7 @@
 
 export const SPORT_CONFIG = {
   cricket:    { url: 'https://site.api.espn.com/apis/personalized/v2/scoreboard/header?sport=cricket&region=in', type: 'cricket-header', name: 'Cricket',    icon: '🏏', region: 'as' },
-  soccer:     { url: 'https://site.api.espn.com/apis/personalized/v2/scoreboard/header?sport=soccer&region=in',  type: 'soccer-header', name: 'Soccer',     icon: '⚽', region: 'eu' },
+  soccer:     { url: 'https://site.api.espn.com/apis/personalized/v2/scoreboard/header?sport=soccer&region=us',  type: 'soccer-header', name: 'Soccer',     icon: '⚽', region: 'eu' },
   tennis:     { url: 'https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard',                      type: 'espn',          name: 'Tennis',     icon: '🎾', region: 'eu' },
   nfl:        { url: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',                    type: 'espn',          name: 'NFL',        icon: '🏈', region: 'na' },
   f1:         { url: `https://api.openf1.org/v1/sessions?year=${new Date().getFullYear()}&session_type=Race`,   type: 'openf1',        name: 'F1',         icon: '🏎️', region: 'eu' },
@@ -23,6 +23,7 @@ export const STANDINGS_CONFIG = {
     { id: 'ger.1',          name: 'Bundesliga' },
     { id: 'fra.1',          name: 'Ligue 1' },
     { id: 'uefa.champions', name: 'Champions League' },
+    { id: 'fifa.world',     name: 'World Cup 2026' },
   ],
   cricket:    [
     { id: '8048', sport: 'cricket', name: 'IPL Points Table' },
@@ -168,6 +169,18 @@ export function parseSportHeader(data, sport = 'cricket') {
         } else {
           leagueGroup = 'domestic';
           leaguePriority = 10;
+        }
+      } else if (sport === 'soccer') {
+        const evNameLower = (ev.name || '').toLowerCase();
+        const isFifaWC =
+          leagueNameLower.includes('world cup') || leagueSlug.includes('world.cup') ||
+          leagueSlug.includes('worldcup') || leagueNameLower.includes('fifa') ||
+          leagueSlug.includes('fifa') || evNameLower.includes('world cup') ||
+          evNameLower.includes('fifa world') ||
+          (league.shortName || '').toLowerCase().includes('world cup');
+        if (isFifaWC) {
+          leagueGroup = 'worldcup';
+          leaguePriority = (evNameLower.includes('final') || evNameLower.includes('semi')) ? 0 : 1;
         }
       }
       matches.push({
