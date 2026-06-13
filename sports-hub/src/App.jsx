@@ -36,6 +36,28 @@ const GLOBAL_CSS = `
   }
   .fade-in { animation: fadeInUp .35s ease-out both; }
 
+  /* ── FIFA World Cup hero ── */
+  @keyframes pitchShimmer {
+    0%   { background-position: -300% 0 }
+    100% { background-position:  300% 0 }
+  }
+  .wc-hero-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%, rgba(34,197,94,.05) 40%,
+      rgba(34,197,94,.09) 50%, rgba(34,197,94,.05) 60%,
+      transparent 100%
+    ) !important;
+    background-size: 300% 100%;
+    animation: pitchShimmer 5s linear infinite;
+  }
+  .wc-flag-card { transition: transform .15s; }
+  .wc-flag-card:hover { transform: scale(1.14); }
+  @media (max-width: 480px) {
+    .wc-hero-title { font-size: 19px !important; }
+    .wc-hero-stats { gap: 6px 10px !important; }
+  }
+
   /* ── Global mobile safety ── */
   img, svg { max-width: 100%; }
   @media (max-width: 480px) {
