@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   fetchStandingsData, fetchIPLStandings, fetchF1ChampionshipStandings,
   fetchTeamSchedule, STANDINGS_CONFIG,
@@ -25,6 +25,8 @@ export default function StandingsPanel({ sportId }) {
   const configs = STANDINGS_CONFIG[sportId];
   if (!configs) return null;
 
+  const wcIdx = sportId === 'soccer' ? configs.findIndex(c => c.id === 'fifa.world') : -1;
+
   const load = async (idx) => {
     setLeagueIdx(idx);
     setLoading(true);
@@ -37,7 +39,7 @@ export default function StandingsPanel({ sportId }) {
         const r = await fetchF1ChampionshipStandings();
         result  = r ? { _f1: true, ...r } : null;
       } else if (sportId === 'cricket' && idx === 0) {
-        result = await fetchIPLStandings(); // dynamic league ID discovery
+        result = await fetchIPLStandings();
       } else {
         const r = await fetchStandingsData(sportId, idx);
         result  = r?.data || null;
@@ -49,6 +51,22 @@ export default function StandingsPanel({ sportId }) {
       setLoading(false);
     }
   };
+
+  /* Auto-open and auto-select WC tab when switching to soccer */
+  useEffect(() => {
+    if (wcIdx >= 0) {
+      setOpen(true);
+      setData(null);
+      setSelectedTeam(null);
+      setSchedule(null);
+      load(wcIdx);
+    } else {
+      setOpen(false);
+      setData(null);
+      setLeagueIdx(0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sportId]);
 
   const toggle = () => {
     const next = !open;
@@ -307,7 +325,8 @@ function StandingsTable({ sportId, leagueIdx, data, onTeamClick }) {
   }
 
   /* ── FIFA World Cup group standings ─────────────────────────────────── */
-  if (isSoccer && children.length > 0 && children[0].name?.toLowerCase().startsWith('group')) {
+  const isWCStandings = isSoccer && leagueIdx === 6; // fifa.world is index 6 in STANDINGS_CONFIG.soccer
+  if (isWCStandings && children.length > 0) {
     return (
       <div style={{ padding: '10px 12px' }}>
         <div style={s.wcHeader}>🏆 FIFA World Cup 2026 · Group Stage</div>
@@ -361,6 +380,10 @@ function StandingsTable({ sportId, leagueIdx, data, onTeamClick }) {
         </div>
       </div>
     );
+  }
+
+  if (isWCStandings && children.length === 0) {
+    return <div style={s.msg}>🏆 Group stage standings will appear once matches are played.</div>;
   }
 
   /* ── Default (Soccer leagues / NFL / MLB / NBA) ───────────────────── */
