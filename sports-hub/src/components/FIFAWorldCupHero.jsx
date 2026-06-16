@@ -88,16 +88,27 @@ function UpcomingMatchTeaser({ match }) {
 
 function PlayerCard({ player }) {
   const [imgFailed, setImgFailed] = useState(false);
-  const imgUrl = `https://a.espncdn.com/i/headshots/soccer/players/full/${player.id}.png`;
+  const [hovered,   setHovered]   = useState(false);
+  const imgUrl  = `https://a.espncdn.com/i/headshots/soccer/players/full/${player.id}.png`;
+  const espnUrl = `https://www.espn.com/soccer/player/_/id/${player.id}`;
   return (
-    <div style={{ ...s.playerCard, borderColor: player.accent + '55' }}>
+    <div
+      style={{
+        ...s.playerCard,
+        borderColor: hovered ? player.accent : player.accent + '55',
+        transform: hovered ? 'translateY(-3px)' : 'none',
+        transition: 'transform .15s, border-color .15s, box-shadow .15s',
+        boxShadow: hovered ? `0 6px 20px ${player.accent}44` : 'none',
+        cursor: 'pointer',
+      }}
+      onClick={() => window.open(espnUrl, '_blank', 'noopener')}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title={`View ${player.name} on ESPN`}
+    >
       <div style={{ ...s.playerImgWrap, background: `linear-gradient(160deg, ${player.accent}33, #0a1628)` }}>
         {!imgFailed ? (
-          <img
-            src={imgUrl} alt={player.name}
-            style={s.playerImg}
-            onError={() => setImgFailed(true)}
-          />
+          <img src={imgUrl} alt={player.name} style={s.playerImg} onError={() => setImgFailed(true)} />
         ) : (
           <span style={s.playerFlagFallback}>{player.flag}</span>
         )}
@@ -112,8 +123,23 @@ function PlayerCard({ player }) {
 }
 
 function VenueCard({ venue }) {
+  const [hovered, setHovered] = useState(false);
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(venue.name + ' FIFA World Cup 2026')}`;
   return (
-    <div style={{ ...s.venueCard, background: venue.grad }}>
+    <div
+      style={{
+        ...s.venueCard,
+        background: venue.grad,
+        transform: hovered ? 'translateY(-3px)' : 'none',
+        transition: 'transform .15s, box-shadow .15s',
+        boxShadow: hovered ? '0 8px 24px rgba(34,197,94,.2)' : 'none',
+        cursor: 'pointer',
+      }}
+      onClick={() => window.open(searchUrl, '_blank', 'noopener')}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title={`Search ${venue.name}`}
+    >
       <div style={s.venueFlag}>{venue.flag}</div>
       <div style={s.venueRole}>{venue.role}</div>
       <div style={s.venueName}>{venue.name}</div>

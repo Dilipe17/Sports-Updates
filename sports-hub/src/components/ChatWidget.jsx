@@ -21,13 +21,14 @@ const uid = () => `m${++_uid}`;
 
 const WELCOME = {
   id: 'welcome', role: 'ai',
-  html: `Hi! I'm your <strong>SportsHub AI</strong> powered by live ESPN data.<br>
+  html: `Hi! I'm your <strong>SportsHub AI</strong> powered by live ESPN data.<br><br>
+    🏆 <strong>FIFA World Cup 2026 is LIVE!</strong><br>
     Try asking:<br>
-    🏆 Today's live scores?<br>
-    🏏 Cricket scores?<br>
+    ⚽ World Cup scores today?<br>
+    🏏 Cricket / IPL scores?<br>
     🏎️ Next F1 race?<br>
     📊 NBA standings?<br>
-    ⚾ Baseball rules?`,
+    🔍 Who won France vs Argentina?`,
 };
 
 export default function ChatWidget() {
@@ -166,8 +167,9 @@ export default function ChatWidget() {
 
 /* ── Detect sport from user message ─────────────────────────────────────────── */
 function detectSport(q) {
+  if (q.includes('world cup') || q.includes('fifa') || q.includes('wc 2026')) return 'soccer';
   if (q.includes('cricket') || q.includes('ipl') || q.includes('t20') || q.includes('odi') || q.includes('test match')) return 'cricket';
-  if (q.includes('soccer') || q.includes('football') && q.includes('premier')) return 'soccer';
+  if (q.includes('soccer') || (q.includes('football') && q.includes('premier'))) return 'soccer';
   if (q.includes('nfl') || q.includes('american football')) return 'football';
   if (q.includes('nba') || q.includes('basketball')) return 'basketball';
   if (q.includes('mlb') || q.includes('baseball')) return 'baseball';
@@ -219,6 +221,21 @@ async function buildReply(q) {
     if (upcoming.length)  html += `<br><br><strong>Next Race:</strong> ${upcoming[0].team1Full}<br>📍 ${upcoming[0].team2Full}<br>📅 ${upcoming[0].score1} at ${upcoming[0].score2}<br>⏱️ ${upcoming[0].status}`;
     if (completed.length) html += `<br><br><strong>Recent:</strong><br>` + completed.map(r => `${r.team1} (${r.team2}) — ${r.score1}`).join('<br>');
     return html;
+  }
+
+  // ── FIFA World Cup ──
+  if (q.includes('world cup') || q.includes('fifa') || q.includes('wc')) {
+    const data = await fetchSportMatches('soccer');
+    const wc   = data.filter(m => m.leagueGroup === 'worldcup');
+    if (!wc.length) return `⚽ <strong>FIFA World Cup 2026</strong> — No live WC matches right now. Check back during match time!`;
+    const live   = wc.filter(m => m.isLive);
+    const done   = wc.filter(m => m.isComplete && !m.isLive);
+    const upcoming = wc.filter(m => !m.isLive && !m.isComplete);
+    let html = `🏆 <strong>FIFA World Cup 2026 · ${live.length ? 'LIVE NOW' : 'Today'}</strong><br><br>`;
+    if (live.length)    html += `🔴 <strong>LIVE:</strong><br>` + live.map(fmt).join('<br>') + '<br><br>';
+    if (done.length)    html += `✅ <strong>Completed:</strong><br>` + done.slice(0,3).map(fmt).join('<br>') + '<br><br>';
+    if (upcoming.length) html += `📅 <strong>Upcoming:</strong><br>` + upcoming.slice(0,3).map(fmt).join('<br>');
+    return html.trim();
   }
 
   // ── Sport-specific ──
@@ -277,11 +294,11 @@ async function buildReply(q) {
 
   // ── Default ──
   return `I can help with live scores, results, and rules! Try:<br>
-    • <strong>"Cricket scores"</strong> — all cricket matches<br>
-    • <strong>"Who won India match?"</strong> — search by team<br>
+    • <strong>"World Cup scores"</strong> — FIFA WC 2026 live<br>
+    • <strong>"Cricket scores"</strong> — IPL &amp; international<br>
+    • <strong>"Who won France match?"</strong> — search by team<br>
     • <strong>"NBA scores"</strong> — basketball results<br>
     • <strong>"Next F1 race"</strong> — F1 calendar<br>
-    • <strong>"Baseball rules"</strong> — sport rules<br>
     • <strong>"Today's scores"</strong> — all sports`;
 }
 
