@@ -7,6 +7,7 @@ import IPLBanner          from '../components/IPLBanner';
 import WinPredictor       from '../components/WinPredictor';
 import FIFAWorldCupHero   from '../components/FIFAWorldCupHero';
 import WCKnockoutBracket  from '../components/WCKnockoutBracket';
+import WCPlayerStats      from '../components/WCPlayerStats';
 import { SPORT_CONFIG, fetchSportMatches, fetchESPNHeadlines } from '../../../shared/api.js';
 
 const SPORTS = Object.entries(SPORT_CONFIG).map(([id, cfg]) => ({ id, ...cfg }));
@@ -197,6 +198,9 @@ export default function HomePage() {
               {groups.worldcup.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
             </>}
           </div>
+
+          {/* WC player stats — top scorers, assists, clean sheets */}
+          <WCPlayerStats />
 
           {/* Knockout bracket */}
           <WCKnockoutBracket />
