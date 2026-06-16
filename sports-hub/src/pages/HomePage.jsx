@@ -6,6 +6,7 @@ import MatchCard, { SectionHeader, MatchCardSkeleton } from '../components/Match
 import IPLBanner          from '../components/IPLBanner';
 import WinPredictor       from '../components/WinPredictor';
 import FIFAWorldCupHero   from '../components/FIFAWorldCupHero';
+import WCKnockoutBracket  from '../components/WCKnockoutBracket';
 import { SPORT_CONFIG, fetchSportMatches, fetchESPNHeadlines } from '../../../shared/api.js';
 
 const SPORTS = Object.entries(SPORT_CONFIG).map(([id, cfg]) => ({ id, ...cfg }));
@@ -189,10 +190,16 @@ export default function HomePage() {
       let idx = 0;
       return (
         <>
+          {/* Live WC group-stage matches */}
           {groups.worldcup.length > 0 && <>
-            <SectionHeader icon="🏆" title="FIFA World Cup 2026" count={groups.worldcup.length} accent="#4ade80" />
+            <SectionHeader icon="🏆" title="FIFA World Cup 2026 · Live Scores" count={groups.worldcup.length} accent="#4ade80" />
             {groups.worldcup.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
           </>}
+
+          {/* Knockout bracket */}
+          <WCKnockoutBracket />
+
+          {/* Club football */}
           {groups.other.length > 0 && <>
             <SectionHeader icon="⚽" title="Club Football" count={groups.other.length} />
             {groups.other.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
