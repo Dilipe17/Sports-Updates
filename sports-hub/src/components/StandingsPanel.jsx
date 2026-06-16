@@ -72,15 +72,16 @@ export default function StandingsPanel({ sportId }) {
   };
 
   const isIPL = sportId === 'cricket' && leagueIdx === 0;
+  const isWC  = sportId === 'soccer'  && configs[leagueIdx]?.id === 'fifa.world';
 
   return (
     <div style={s.wrap}>
       <button
-        style={{ ...s.toggleBtn, ...(isIPL ? s.iplToggleBtn : {}) }}
+        style={{ ...s.toggleBtn, ...(isIPL ? s.iplToggleBtn : isWC ? s.wcToggleBtn : {}) }}
         onClick={toggle}
       >
-        <span>{isIPL ? '🏏' : '📊'}</span>
-        <span>{isIPL ? 'IPL 2026 Points Table' : 'Standings'}</span>
+        <span>{isIPL ? '🏏' : isWC ? '🏆' : '📊'}</span>
+        <span>{isIPL ? 'IPL 2026 Points Table' : isWC ? 'FIFA World Cup 2026 Groups' : 'Standings'}</span>
         <span style={{ ...s.chevron, transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
       </button>
 
@@ -305,7 +306,64 @@ function StandingsTable({ sportId, leagueIdx, data, onTeamClick }) {
     });
   }
 
-  /* ── Default (Soccer / NFL / MLB / NBA) ──────────────────────────────── */
+  /* ── FIFA World Cup group standings ─────────────────────────────────── */
+  if (isSoccer && children.length > 0 && children[0].name?.toLowerCase().startsWith('group')) {
+    return (
+      <div style={{ padding: '10px 12px' }}>
+        <div style={s.wcHeader}>🏆 FIFA World Cup 2026 · Group Stage</div>
+        <div style={s.wcGrid}>
+          {children.map(child => {
+            const entries = sortEntries(child.standings?.entries || []);
+            if (!entries.length) return null;
+            return (
+              <div key={child.name} style={s.wcGroupCard}>
+                <div style={s.wcGroupTitle}>{child.name}</div>
+                <table style={s.table}>
+                  <thead>
+                    <tr style={s.thead}>
+                      {['Team', 'P', 'W', 'D', 'L', 'GD', 'Pts'].map(h => (
+                        <th key={h} style={h === 'Team' ? { ...s.thLeft, padding: '6px 8px', fontSize: 10 } : { ...s.th, padding: '6px 4px', fontSize: 10 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entries.map((e, i) => {
+                      const stats   = statsObj(e);
+                      const logo    = e.team?.logos?.[0]?.href || '';
+                      const advance = i < 2;
+                      return (
+                        <tr key={i} style={{ ...s.tr, borderLeft: `2px solid ${advance ? '#4ade80' : 'transparent'}` }}>
+                          <td style={{ ...s.tdTeam, padding: '5px 8px', gap: 4 }}>
+                            {logo
+                              ? <img src={logo} style={{ width: 16, height: 16, objectFit: 'contain', flexShrink: 0 }} onError={e => { e.target.style.display = 'none'; }} alt="" />
+                              : null
+                            }
+                            <span style={{ fontSize: 11, fontWeight: 600 }}>{e.team?.abbreviation || e.team?.shortDisplayName || 'TBD'}</span>
+                            {advance && <span style={s.advanceBadge}>▲</span>}
+                          </td>
+                          <td style={{ ...s.td, padding: '5px 4px', fontSize: 11 }}>{stats.gamesPlayed || '0'}</td>
+                          <td style={{ ...s.td, padding: '5px 4px', fontSize: 11, color: '#4ade80' }}>{stats.wins || '0'}</td>
+                          <td style={{ ...s.td, padding: '5px 4px', fontSize: 11 }}>{stats.ties || '0'}</td>
+                          <td style={{ ...s.td, padding: '5px 4px', fontSize: 11, color: '#f87171' }}>{stats.losses || '0'}</td>
+                          <td style={{ ...s.td, padding: '5px 4px', fontSize: 11 }}>{stats.pointDifferential || '0'}</td>
+                          <td style={{ ...s.td, padding: '5px 4px', fontSize: 12, color: '#4ade80', fontWeight: 800 }}>{stats.points || '0'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
+        </div>
+        <div style={s.wcLegend}>
+          <span style={{ color: '#4ade80' }}>▲</span> Top 2 from each group advance to Round of 32
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Default (Soccer leagues / NFL / MLB / NBA) ───────────────────── */
   let entries = [];
   if (children.length > 0) {
     children.forEach(c => entries.push(...(c.standings?.entries || [])));
@@ -327,9 +385,9 @@ function StandingsTable({ sportId, leagueIdx, data, onTeamClick }) {
         </thead>
         <tbody>
           {entries.map((e, i) => {
-            const stats    = statsObj(e);
-            const logo     = e.team?.logos?.[0]?.href || '';
-            const isTop4   = i < 4;
+            const stats     = statsObj(e);
+            const logo      = e.team?.logos?.[0]?.href || '';
+            const isTop4    = i < 4;
             const isRelzone = isSoccer && i >= entries.length - 3;
             const bl = isTop4 ? '#22c55e' : isRelzone ? '#ef4444' : 'transparent';
             return (
@@ -414,6 +472,7 @@ const sortEntries = (entries) => [...entries].sort((a, b) => {
 const s = {
   wrap:         { marginBottom: 16 },
   iplToggleBtn: { background: 'rgba(251,146,60,.15)', border: '1px solid rgba(251,146,60,.4)', color: '#fb923c' },
+  wcToggleBtn:  { background: 'rgba(34,197,94,.12)',  border: '1px solid rgba(34,197,94,.4)',  color: '#4ade80' },
   toggleBtn: {
     display: 'flex', alignItems: 'center', gap: 8,
     padding: '8px 16px',
@@ -448,6 +507,14 @@ const s = {
   td:         { padding: '7px 8px', textAlign: 'center', color: '#cbd5e1' },
   teamLogo:   { width: 18, height: 18, objectFit: 'contain', flexShrink: 0 },
   legend:     { padding: '6px 12px', fontSize: 10, color: '#60a5fa', borderTop: '1px solid rgba(30,64,175,.2)' },
+
+  /* FIFA WC group grid */
+  wcHeader:    { fontSize: 11, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 },
+  wcGrid:      { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 },
+  wcGroupCard: { background: 'rgba(10,22,60,.6)', border: '1px solid rgba(34,197,94,.2)', borderRadius: 12, overflow: 'hidden' },
+  wcGroupTitle: { fontSize: 11, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '.07em', padding: '7px 10px', background: 'rgba(34,197,94,.08)', borderBottom: '1px solid rgba(34,197,94,.15)' },
+  wcLegend:    { fontSize: 10, color: '#4ade80', marginTop: 10, padding: '6px 0 2px', borderTop: '1px solid rgba(34,197,94,.15)' },
+  advanceBadge:{ fontSize: 8, color: '#4ade80', marginLeft: 2, fontWeight: 800, flexShrink: 0 },
 
   /* Team schedule panel */
   schedWrap:     { padding: 12 },
