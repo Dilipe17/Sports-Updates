@@ -270,14 +270,47 @@ export async function fetchSportMatches(sportId, forceRefresh = false) {
   const cached = _matchCache[sportId];
   if (!forceRefresh && cached && (Date.now() - cached.ts) < 60000) return cached.matches;
   try {
-    const res = await fetch(config.url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
     let matches = [];
-    if      (config.type === 'cricket-header') matches = parseSportHeader(data, 'cricket');
-    else if (config.type === 'soccer-header')  matches = parseSportHeader(data, 'soccer');
-    else if (config.type === 'openf1')          matches = parseOpenF1Data(data);
-    else                                        matches = parseESPNData(data);
+    if (config.type === 'soccer-header') {
+      // Fetch main header + WC detailed scoreboard (for venue) in parallel
+      const [mainRes, wcRes] = await Promise.all([
+        fetch(config.url),
+        fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard').catch(() => null),
+      ]);
+      if (!mainRes.ok) throw new Error(`HTTP ${mainRes.status}`);
+      const data = await mainRes.json();
+      matches = parseSportHeader(data, 'soccer');
+      // Enrich WC matches with venue from detailed scoreboard
+      if (wcRes?.ok) {
+        const wcData = await wcRes.json().catch(() => null);
+        if (wcData?.events) {
+          const venueMap = {};
+          for (const ev of wcData.events) {
+            const v = ev.competitions?.[0]?.venue?.fullName || '';
+            if (!v) continue;
+            const comps = ev.competitions[0].competitors || [];
+            const names = comps.map(c => c.team?.shortDisplayName || c.team?.displayName || '').filter(Boolean);
+            // Index by both orderings
+            if (names.length >= 2) {
+              venueMap[`${names[0]}|${names[1]}`] = v;
+              venueMap[`${names[1]}|${names[0]}`] = v;
+            }
+          }
+          for (const m of matches) {
+            if (m.leagueGroup === 'worldcup' && !m.venue) {
+              m.venue = venueMap[`${m.team1}|${m.team2}`] || venueMap[`${m.team2}|${m.team1}`] || '';
+            }
+          }
+        }
+      }
+    } else {
+      const res = await fetch(config.url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if      (config.type === 'cricket-header') matches = parseSportHeader(data, 'cricket');
+      else if (config.type === 'openf1')          matches = parseOpenF1Data(data);
+      else                                        matches = parseESPNData(data);
+    }
     matches.sort((a, b) => {
       const lp = (a.leaguePriority || 99) - (b.leaguePriority || 99);
       if (lp !== 0) return lp;
