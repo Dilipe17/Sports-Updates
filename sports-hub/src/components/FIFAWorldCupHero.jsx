@@ -5,24 +5,30 @@ const dayNumber = Math.max(1, Math.ceil((Date.now() - WC_START.getTime()) / (100
 
 /* ── Nation flags ──────────────────────────────────────────────────────────── */
 const NATIONS = [
-  { flag: '🇧🇷', name: 'Brazil'       }, { flag: '🇦🇷', name: 'Argentina'   },
-  { flag: '🇫🇷', name: 'France'       }, { flag: '🇩🇪', name: 'Germany'     },
-  { flag: '🇪🇸', name: 'Spain'        }, { flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', name: 'England'     },
-  { flag: '🇵🇹', name: 'Portugal'     }, { flag: '🇳🇱', name: 'Netherlands' },
-  { flag: '🇧🇪', name: 'Belgium'      }, { flag: '🇮🇹', name: 'Italy'       },
-  { flag: '🇺🇸', name: 'USA'          }, { flag: '🇨🇦', name: 'Canada'      },
-  { flag: '🇲🇽', name: 'Mexico'       }, { flag: '🇯🇵', name: 'Japan'       },
-  { flag: '🇰🇷', name: 'Korea'        }, { flag: '🇲🇦', name: 'Morocco'     },
-  { flag: '🇸🇳', name: 'Senegal'      }, { flag: '🇳🇬', name: 'Nigeria'     },
-  { flag: '🇬🇭', name: 'Ghana'        }, { flag: '🇭🇷', name: 'Croatia'     },
-  { flag: '🇺🇾', name: 'Uruguay'      }, { flag: '🇨🇴', name: 'Colombia'    },
-  { flag: '🇨🇱', name: 'Chile'        }, { flag: '🇨🇭', name: 'Switzerland' },
-  { flag: '🇩🇰', name: 'Denmark'      }, { flag: '🇦🇹', name: 'Austria'     },
-  { flag: '🇸🇦', name: 'Saudi Arabia' }, { flag: '🇦🇺', name: 'Australia'   },
-  { flag: '🇪🇨', name: 'Ecuador'      }, { flag: '🇵🇦', name: 'Panama'      },
-  { flag: '🇷🇸', name: 'Serbia'       }, { flag: '🇵🇱', name: 'Poland'      },
-  { flag: '🇹🇳', name: 'Tunisia'      }, { flag: '🇮🇷', name: 'Iran'        },
-  { flag: '🇨🇲', name: 'Cameroon'     }, { flag: '🇶🇦', name: 'Qatar'       },
+  { flag: '🇧🇷', name: 'Brazil'        }, { flag: '🇦🇷', name: 'Argentina'    },
+  { flag: '🇫🇷', name: 'France'        }, { flag: '🇩🇪', name: 'Germany'      },
+  { flag: '🇪🇸', name: 'Spain'         }, { flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', name: 'England'      },
+  { flag: '🇵🇹', name: 'Portugal'      }, { flag: '🇳🇱', name: 'Netherlands'  },
+  { flag: '🇧🇪', name: 'Belgium'       }, { flag: '🇭🇷', name: 'Croatia'      },
+  { flag: '🇺🇸', name: 'USA'           }, { flag: '🇨🇦', name: 'Canada'       },
+  { flag: '🇲🇽', name: 'Mexico'        }, { flag: '🇯🇵', name: 'Japan'        },
+  { flag: '🇰🇷', name: 'Korea'         }, { flag: '🇲🇦', name: 'Morocco'      },
+  { flag: '🇸🇳', name: 'Senegal'       }, { flag: '🇳🇬', name: 'Nigeria'      },
+  { flag: '🇬🇭', name: 'Ghana'         }, { flag: '🇺🇾', name: 'Uruguay'      },
+  { flag: '🇨🇴', name: 'Colombia'      }, { flag: '🇨🇭', name: 'Switzerland'  },
+  { flag: '🇩🇰', name: 'Denmark'       }, { flag: '🇦🇹', name: 'Austria'      },
+  { flag: '🇸🇦', name: 'Saudi Arabia'  }, { flag: '🇦🇺', name: 'Australia'    },
+  { flag: '🇪🇨', name: 'Ecuador'       }, { flag: '🇵🇦', name: 'Panama'       },
+  { flag: '🇷🇸', name: 'Serbia'        }, { flag: '🇵🇱', name: 'Poland'       },
+  { flag: '🇹🇳', name: 'Tunisia'       }, { flag: '🇮🇷', name: 'Iran'         },
+  { flag: '🇨🇲', name: 'Cameroon'      }, { flag: '🇹🇷', name: 'Turkey'       },
+  { flag: '🇸🇰', name: 'Slovakia'      }, { flag: '🇵🇾', name: 'Paraguay'     },
+  { flag: '🇭🇳', name: 'Honduras'      }, { flag: '🇨🇷', name: 'Costa Rica'   },
+  { flag: '🇿🇦', name: 'South Africa'  }, { flag: '🇪🇬', name: 'Egypt'        },
+  { flag: '🇨🇮', name: "Côte d'Ivoire" }, { flag: '🇳🇿', name: 'New Zealand'  },
+  { flag: '🇺🇿', name: 'Uzbekistan'    }, { flag: '🇯🇴', name: 'Jordan'       },
+  { flag: '🇯🇲', name: 'Jamaica'       }, { flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', name: 'Scotland'     },
+  { flag: '🇺🇦', name: 'Ukraine'       }, { flag: '🇭🇺', name: 'Hungary'      },
 ];
 
 /* ── Star players ──────────────────────────────────────────────────────────── */
@@ -90,7 +96,8 @@ function PlayerCard({ player }) {
   const [imgFailed, setImgFailed] = useState(false);
   const [hovered,   setHovered]   = useState(false);
   const imgUrl  = `https://a.espncdn.com/i/headshots/soccer/players/full/${player.id}.png`;
-  const espnUrl = `https://www.espn.com/soccer/player/_/id/${player.id}`;
+  const espnUrl = `https://www.google.com/search?q=${encodeURIComponent(player.name + ' FIFA World Cup 2026 soccer')}`;
+
   return (
     <div
       style={{
@@ -104,7 +111,7 @@ function PlayerCard({ player }) {
       onClick={() => window.open(espnUrl, '_blank', 'noopener')}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      title={`View ${player.name} on ESPN`}
+      title={`Search ${player.name} stats`}
     >
       <div style={{ ...s.playerImgWrap, background: `linear-gradient(160deg, ${player.accent}33, #0a1628)` }}>
         {!imgFailed ? (

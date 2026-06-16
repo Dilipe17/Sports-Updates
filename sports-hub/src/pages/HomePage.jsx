@@ -190,11 +190,13 @@ export default function HomePage() {
       let idx = 0;
       return (
         <>
-          {/* Live WC group-stage matches */}
-          {groups.worldcup.length > 0 && <>
-            <SectionHeader icon="🏆" title="FIFA World Cup 2026 · Live Scores" count={groups.worldcup.length} accent="#4ade80" />
-            {groups.worldcup.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
-          </>}
+          {/* Live WC group-stage matches — id used by hero CTA scroll */}
+          <div id="wc-live-matches">
+            {groups.worldcup.length > 0 && <>
+              <SectionHeader icon="🏆" title="FIFA World Cup 2026 · Live Scores" count={groups.worldcup.length} accent="#4ade80" />
+              {groups.worldcup.map(m => <MatchCard key={m.id} match={m} delay={(idx++) * 70} />)}
+            </>}
+          </div>
 
           {/* Knockout bracket */}
           <WCKnockoutBracket />
@@ -222,7 +224,9 @@ export default function HomePage() {
           liveMatch={wcLiveMatch}
           onViewScores={() => {
             setActiveTab('soccer');
-            setTimeout(() => tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+            setTimeout(() => {
+              document.getElementById('wc-live-matches')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 280);
           }}
         />
 

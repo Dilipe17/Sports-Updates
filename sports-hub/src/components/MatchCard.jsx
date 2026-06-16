@@ -125,7 +125,7 @@ export default function MatchCard({ match, delay = 0 }) {
           )}
           {match.summary && <div style={s.summary}>{match.summary}</div>}
           {match.potm    && <div style={s.potm}>⭐ POTM: {match.potm}</div>}
-          {match.venue   && <div style={s.venue}>{match.venue}</div>}
+          {match.venue   && <div style={s.venue}>🏟️ {match.venue}</div>}
         </div>
 
         {/* Team 2 */}
