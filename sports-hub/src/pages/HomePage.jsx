@@ -229,8 +229,8 @@ export default function HomePage() {
           onViewScores={() => {
             setActiveTab('soccer');
             setTimeout(() => {
-              document.getElementById('wc-live-matches')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 280);
+              tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 150);
           }}
         />
 
@@ -255,11 +255,14 @@ export default function HomePage() {
               ))}
             </nav>
 
-            {/* Standings */}
-            <StandingsPanel sportId={activeTab} />
+            {/* Standings — above matches for all sports except soccer */}
+            {activeTab !== 'soccer' && <StandingsPanel sportId={activeTab} />}
 
             {/* Cards */}
             <div>{renderMatches()}</div>
+
+            {/* Soccer standings below matches so live scores show first */}
+            {activeTab === 'soccer' && <StandingsPanel sportId={activeTab} />}
           </div>
 
           {/* ── Sidebar ────────────────────────────────────────────────── */}
